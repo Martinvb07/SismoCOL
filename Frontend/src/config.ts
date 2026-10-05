@@ -25,6 +25,8 @@ export const DURACION_SENAL_MS = 5_000;
 
 /** Tiempo de espera del entrenamiento del modelo (puede tardar ~2 min). */
 export const TIEMPO_ESPERA_ENTRENAMIENTO_MS = 4 * 60_000;
+/** Carga de archivos y sincronización: el Excel completo (~100 000 filas) tarda ~45 s. */
+export const TIEMPO_ESPERA_CARGA_MS = 5 * 60_000;
 /** Tiempo de espera por defecto para el resto de peticiones. */
 export const TIEMPO_ESPERA_PETICION_MS = 30_000;
 

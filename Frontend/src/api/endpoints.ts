@@ -1,4 +1,8 @@
-import { LIMITE_SIMULACIONES_RECIENTES, TIEMPO_ESPERA_ENTRENAMIENTO_MS } from '@/config';
+import {
+  LIMITE_SIMULACIONES_RECIENTES,
+  TIEMPO_ESPERA_CARGA_MS,
+  TIEMPO_ESPERA_ENTRENAMIENTO_MS,
+} from '@/config';
 import { peticion, peticionArchivo, type ValorQuery } from './cliente';
 import type {
   Carga,
@@ -117,11 +121,19 @@ export const apiAdmin = {
     datos.append('archivo', archivo);
     if (fuente) datos.append('fuente', fuente);
     if (zonaHoraria) datos.append('zonaHoraria', zonaHoraria);
-    return peticion<RespuestaCarga>('/api/cargas', { metodo: 'POST', cuerpo: datos });
+    return peticion<RespuestaCarga>('/api/cargas', {
+      metodo: 'POST',
+      cuerpo: datos,
+      tiempoEsperaMs: TIEMPO_ESPERA_CARGA_MS,
+    });
   },
   cargas: (paginacion: ParametrosPaginacion) =>
     peticion<Paginado<Carga>>('/api/cargas', { query: { ...paginacion } }),
-  sincronizar: () => peticion<RespuestaSincronizacion>('/api/sincronizaciones', { metodo: 'POST' }),
+  sincronizar: () =>
+    peticion<RespuestaSincronizacion>('/api/sincronizaciones', {
+      metodo: 'POST',
+      tiempoEsperaMs: TIEMPO_ESPERA_CARGA_MS,
+    }),
   usuarios: (paginacion: ParametrosPaginacion) =>
     peticion<Paginado<Usuario>>('/api/usuarios', { query: { ...paginacion } }),
   crearUsuario: (cuerpo: CuerpoCrearUsuario) =>
