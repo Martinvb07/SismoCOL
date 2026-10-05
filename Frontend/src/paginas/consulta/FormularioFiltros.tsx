@@ -2,7 +2,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { FUENTES, type FiltrosSismos } from '@/api/tipos';
 import { Boton } from '@/componentes/ui/Basicos';
-import { Campo, Entrada, numeroOpcional, Selector } from '@/componentes/ui/Formulario';
+import { numeroOpcional } from '@/lib/formularios';
+import { Campo, Entrada, Selector } from '@/componentes/ui/Formulario';
 import { esquemaFiltros, LIMITES, type DatosFiltros } from '@/lib/esquemas';
 import { ETIQUETAS_FUENTE } from '@/lib/etiquetas';
 

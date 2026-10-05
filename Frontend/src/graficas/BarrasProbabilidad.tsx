@@ -4,7 +4,8 @@ import { useCallback } from 'react';
 import { NIVELES_IMPACTO, type NivelImpacto } from '@/api/tipos';
 import { estiloNivelImpacto } from '@/lib/escalasColor';
 import { formatearPorcentaje } from '@/lib/formato';
-import { ContenedorGrafica, Eje, ESTILO_GRAFICA, FilaTooltip, Tooltip, useTooltip } from './comun';
+import { ContenedorGrafica, Eje, FilaTooltip, Tooltip } from './comun';
+import { ESTILO_GRAFICA, useTooltip } from './estilo';
 
 interface Props {
   probabilidades: Record<NivelImpacto, number>;

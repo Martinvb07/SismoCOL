@@ -6,17 +6,8 @@ import { useCallback, useId, useMemo, useState } from 'react';
 import type { GutenbergRichter, PuntoGR } from '@/api/tipos';
 import { rectaGutenbergRichter } from '@/lib/analisis';
 import { formatearEntero, formatearNumero } from '@/lib/formato';
-import {
-  ContenedorGrafica,
-  Eje,
-  ElementoLeyenda,
-  ESTILO_GRAFICA,
-  FilaTooltip,
-  Leyenda,
-  MARGENES_POR_DEFECTO,
-  Tooltip,
-  useTooltip,
-} from './comun';
+import { ContenedorGrafica, Eje, ElementoLeyenda, FilaTooltip, Leyenda, Tooltip } from './comun';
+import { ESTILO_GRAFICA, MARGENES_POR_DEFECTO, useTooltip } from './estilo';
 
 interface Props {
   gr: GutenbergRichter;

@@ -7,17 +7,8 @@ import { useCallback } from 'react';
 import type { MannKendall, PuntoSerieMensual } from '@/api/tipos';
 import { ETIQUETAS_TENDENCIA, valorSen } from '@/lib/analisis';
 import { formatearEntero, formatearMes, formatearNumero, formatearPValor } from '@/lib/formato';
-import {
-  ContenedorGrafica,
-  Eje,
-  ElementoLeyenda,
-  ESTILO_GRAFICA,
-  FilaTooltip,
-  Leyenda,
-  MARGENES_POR_DEFECTO,
-  Tooltip,
-  useTooltip,
-} from './comun';
+import { ContenedorGrafica, Eje, ElementoLeyenda, FilaTooltip, Leyenda, Tooltip } from './comun';
+import { ESTILO_GRAFICA, MARGENES_POR_DEFECTO, useTooltip } from './estilo';
 
 interface Props {
   serie: PuntoSerieMensual[];

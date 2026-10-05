@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { mensajeDeError } from '@/api/cliente';
-import { useSesion, type EstadoNavegacionLogin } from '@/auth/ContextoSesion';
+import { useSesion, type EstadoNavegacionLogin } from '@/auth/sesion';
 import { RUTAS } from '@/componentes/layout/navegacion';
 import { Alerta, Boton } from '@/componentes/ui/Basicos';
 import { Campo, Entrada } from '@/componentes/ui/Formulario';

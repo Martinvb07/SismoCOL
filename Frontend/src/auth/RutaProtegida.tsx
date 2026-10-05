@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { Rol } from '@/api/tipos';
-import { RUTA_LOGIN, useSesion, type EstadoNavegacionLogin } from './ContextoSesion';
+import { RUTA_LOGIN, useSesion, type EstadoNavegacionLogin } from './sesion';
 
 interface Props {
   /** Roles permitidos. Sin valor: cualquier usuario autenticado. */

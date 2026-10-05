@@ -6,17 +6,8 @@ import { useCallback, useMemo } from 'react';
 import type { BinHistograma } from '@/api/tipos';
 import { colorMagnitud, LEYENDA_MAGNITUD } from '@/lib/escalasColor';
 import { formatearEntero, formatearNumero } from '@/lib/formato';
-import {
-  ContenedorGrafica,
-  Eje,
-  ElementoLeyenda,
-  ESTILO_GRAFICA,
-  FilaTooltip,
-  Leyenda,
-  MARGENES_POR_DEFECTO,
-  Tooltip,
-  useTooltip,
-} from './comun';
+import { ContenedorGrafica, Eje, ElementoLeyenda, FilaTooltip, Leyenda, Tooltip } from './comun';
+import { ESTILO_GRAFICA, MARGENES_POR_DEFECTO, useTooltip } from './estilo';
 
 interface Props {
   bins: BinHistograma[];

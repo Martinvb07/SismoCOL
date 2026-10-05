@@ -54,10 +54,3 @@ export const Selector = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
     </select>
   );
 });
-
-/** Convierte el valor de un input numérico vacío en undefined (para Zod opcional). */
-export function numeroOpcional(valor: unknown): number | undefined {
-  if (valor === '' || valor === null || valor === undefined) return undefined;
-  const n = typeof valor === 'number' ? valor : Number(String(valor).replace(',', '.'));
-  return Number.isNaN(n) ? undefined : n;
-}

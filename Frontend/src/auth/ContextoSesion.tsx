@@ -1,27 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { registrarManejadorNoAutorizado } from '@/api/cliente';
 import { apiAuth } from '@/api/endpoints';
-import type { CuerpoLogin, Rol, Usuario } from '@/api/tipos';
+import type { CuerpoLogin } from '@/api/tipos';
 import { borrarSesion, guardarSesion, leerSesion, suscribirseSesion, type SesionGuardada } from './almacenSesion';
-
-export interface ValorSesion {
-  usuario: Usuario | null;
-  rol: Rol | null;
-  autenticado: boolean;
-  iniciarSesion: (credenciales: CuerpoLogin) => Promise<Usuario>;
-  cerrarSesion: () => void;
-}
-
-const ContextoSesion = createContext<ValorSesion | null>(null);
-
-export const RUTA_LOGIN = '/login';
-
-export interface EstadoNavegacionLogin {
-  desde?: string;
-  motivo?: 'expirada';
-}
+import { ContextoSesion, RUTA_LOGIN, type EstadoNavegacionLogin, type ValorSesion } from './sesion';
 
 export function ProveedorSesion({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<SesionGuardada | null>(() => leerSesion());
@@ -75,10 +59,4 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   );
 
   return <ContextoSesion.Provider value={valor}>{children}</ContextoSesion.Provider>;
-}
-
-export function useSesion(): ValorSesion {
-  const valor = useContext(ContextoSesion);
-  if (!valor) throw new Error('useSesion debe usarse dentro de <ProveedorSesion>');
-  return valor;
 }

@@ -31,7 +31,7 @@ export const TIEMPO_ESPERA_PETICION_MS = 30_000;
 export const TAMANO_MAXIMO_ARCHIVO_BYTES = 25 * 1024 * 1024;
 export const EXTENSIONES_ARCHIVO_PERMITIDAS = ['.csv', '.xlsx'] as const;
 
-export const RUTA_GEOJSON_DEPARTAMENTOS = '/geo/colombia-departamentos.json';
+export const RUTA_GEOJSON_DEPARTAMENTOS = `${import.meta.env.BASE_URL}geo/colombia-departamentos.json`;
 
 /** Tiempo que una consulta se considera fresca (TanStack Query). */
 export const TIEMPO_FRESCO_CONSULTAS_MS = 60_000;

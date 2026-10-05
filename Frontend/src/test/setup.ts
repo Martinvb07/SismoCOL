@@ -18,10 +18,10 @@ class ResizeObserverFalso {
     const ALTO = 320;
     this.callback(
       [{ target: elemento, contentRect: { width: ANCHO, height: ALTO } } as unknown as ResizeObserverEntry],
-      this as unknown as ResizeObserver,
+      this,
     );
   }
   unobserve() {}
   disconnect() {}
 }
-globalThis.ResizeObserver = ResizeObserverFalso as unknown as typeof ResizeObserver;
+globalThis.ResizeObserver = ResizeObserverFalso;

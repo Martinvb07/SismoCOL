@@ -114,8 +114,10 @@ function registrar(tipo: ResumenAdmin['actividadReciente'][number]['tipo'], desc
 
 const formatoDecimal = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-function csvEscapar(valor: unknown): string {
-  if (valor === null || valor === undefined) return '';
+const BOM_UTF8 = String.fromCharCode(0xfeff);
+
+function csvEscapar(valor: string | number | boolean | null): string {
+  if (valor === null) return '';
   const texto = String(valor);
   return /[",\n]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
 }
@@ -167,7 +169,7 @@ export const handlers = [
       'departamento', 'municipio', 'zona', 'fuente', 'nivelImpacto', 'esReplica', 'esAnomalo', 'motivoAnomalia',
     ] as const;
     const filas = lista.map((s) => columnas.map((c) => csvEscapar(s[c])).join(','));
-    const csv = `﻿${columnas.join(',')}\n${filas.join('\n')}\n`;
+    const csv = `${BOM_UTF8}${columnas.join(',')}\n${filas.join('\n')}\n`;
     return new HttpResponse(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',

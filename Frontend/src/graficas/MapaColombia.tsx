@@ -1,37 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
 import { max } from 'd3-array';
 import { geoMercator, geoPath } from 'd3-geo';
 import { scaleSqrt } from 'd3-scale';
-import type { Feature, FeatureCollection, Geometry } from 'geojson';
+import type { Feature, Geometry } from 'geojson';
 import { useMemo } from 'react';
 import type { PuntoMapa } from '@/api/tipos';
 import { EstadoCargando, EstadoError } from '@/componentes/ui/Estados';
-import { RUTA_GEOJSON_DEPARTAMENTOS } from '@/config';
 import { colorMagnitud, LEYENDA_MAGNITUD } from '@/lib/escalasColor';
 import { formatearFechaHora, formatearMagnitud, formatearNumero, formatearProfundidad } from '@/lib/formato';
-import { ContenedorGrafica, ElementoLeyenda, FilaTooltip, Leyenda, Tooltip, useTooltip } from './comun';
-
-export interface PropiedadesDepartamento {
-  nombre: string;
-  codigo: string;
-}
-export type ColeccionDepartamentos = FeatureCollection<Geometry, PropiedadesDepartamento>;
-
-/** Carga el GeoJSON de departamentos (estático en /public). */
-export async function cargarDepartamentos(): Promise<ColeccionDepartamentos> {
-  const respuesta = await fetch(RUTA_GEOJSON_DEPARTAMENTOS);
-  if (!respuesta.ok) throw new Error('No se pudo cargar el mapa de departamentos.');
-  return (await respuesta.json()) as ColeccionDepartamentos;
-}
-
-export function useDepartamentosGeo() {
-  return useQuery({
-    queryKey: ['geo', 'departamentos'],
-    queryFn: cargarDepartamentos,
-    staleTime: Number.POSITIVE_INFINITY,
-    gcTime: Number.POSITIVE_INFINITY,
-  });
-}
+import { ContenedorGrafica, ElementoLeyenda, FilaTooltip, Leyenda, Tooltip } from './comun';
+import { useTooltip } from './estilo';
+import { useDepartamentosGeo, type PropiedadesDepartamento } from './geo';
 
 interface Props {
   puntos?: PuntoMapa[];

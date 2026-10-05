@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useSesion } from '@/auth/ContextoSesion';
+import { useSesion } from '@/auth/sesion';
 import { Insignia } from '@/componentes/ui/Basicos';
 import { IconoCerrar, IconoMenu, IconoSalir } from '@/componentes/ui/Iconos';
 import { ETIQUETAS_ROL } from '@/lib/etiquetas';

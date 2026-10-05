@@ -1,13 +1,13 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { esErrorApi } from './api/cliente';
-import { ProveedorSesion, useSesion } from './auth/ContextoSesion';
+import { ProveedorSesion } from './auth/ContextoSesion';
+import { useSesion } from './auth/sesion';
 import { RutaProtegida } from './auth/RutaProtegida';
 import { Layout } from './componentes/layout/Layout';
 import { RUTAS } from './componentes/layout/navegacion';
 import { EstadoCargando } from './componentes/ui/Estados';
-import { TIEMPO_FRESCO_CONSULTAS_MS } from './config';
+import { crearClienteConsultas } from './lib/clienteConsultas';
 import { PaginaLogin } from './paginas/Login';
 import { PaginaNoEncontrada, PaginaSinPermiso } from './paginas/Errores';
 
@@ -19,22 +19,6 @@ const PaginaAdminPanel = lazy(() => import('./paginas/admin/Panel'));
 const PaginaAdminDatos = lazy(() => import('./paginas/admin/DatosModelo'));
 const PaginaAdminConfiguracion = lazy(() => import('./paginas/admin/Configuracion'));
 const PaginaAdminUsuarios = lazy(() => import('./paginas/admin/Usuarios'));
-
-const MAX_REINTENTOS = 2;
-const ESTADOS_SIN_REINTENTO = new Set([400, 401, 403, 404, 409, 422]);
-
-export function crearClienteConsultas(): QueryClient {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: TIEMPO_FRESCO_CONSULTAS_MS,
-        refetchOnWindowFocus: false,
-        retry: (intentos, error) => !(esErrorApi(error) && ESTADOS_SIN_REINTENTO.has(error.estado)) && intentos < MAX_REINTENTOS,
-      },
-      mutations: { retry: false },
-    },
-  });
-}
 
 function Inicio() {
   const { autenticado } = useSesion();
