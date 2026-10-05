@@ -1,0 +1,2 @@
+# .env.development solo contiene banderas públicas (sin secretos) y se versiona
+!.env.development
