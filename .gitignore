@@ -1,0 +1,42 @@
+# --- DEPENDENCIAS ---
+node_modules/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# --- BUILDS ---
+dist/
+build/
+*.tsbuildinfo
+coverage/
+.pio/
+
+# --- CÓDIGO GENERADO ---
+Backend/src/generated/
+
+# --- DATOS Y MODELOS (no se versionan) ---
+data/raw/
+data/ref/
+Analytics/models/
+uploads/
+
+# --- SECRETOS ---
+**/.env
+**/.env.*
+!**/.env.example
+Firmware/esp32/include/secrets.h
+infra/mosquitto/passwd
+
+# --- IDE & OS ---
+.idea/
+.vscode/
+.claude/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# --- LOGS ---
+*.log
+logs/

@@ -1,0 +1,293 @@
+// Modelo de datos de SismoCol (MySQL 8).
+// Las fechas se guardan en UTC (convención de Prisma); la conversión a
+// America/Bogota se hace al leer las fuentes y al presentar en el frontend.
+// Cambios respecto al modelo original: ver docs/decisiones.md.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum Rol {
+  ADMIN
+  USUARIO
+}
+
+enum FuenteDato {
+  SGC
+  UNGRD
+  DESINVENTAR
+  USGS
+}
+
+enum OrigenCarga {
+  ARCHIVO
+  API
+}
+
+enum EstadoCarga {
+  PROCESADO
+  RECHAZADO
+}
+
+enum NivelImpacto {
+  SIN_AFECTACION
+  BAJO
+  MODERADO
+  ALTO
+}
+
+enum PrecisionUbicacion {
+  EPICENTRO
+  CENTROIDE_MUNICIPIO
+}
+
+enum EstadoDispositivo {
+  EN_LINEA
+  DESCONECTADO
+}
+
+enum EstadoEnvio {
+  PENDIENTE
+  ENVIADA
+  FALLIDA
+}
+
+enum NivelAdvertencia {
+  NORMAL
+  ELEVADA
+  ALTA
+}
+
+// ─── Usuarios ───────────────────────────────────────────────────────────────
+
+model Usuario {
+  idUsuario      Int      @id @default(autoincrement()) @map("id_usuario")
+  nombre         String   @db.VarChar(100)
+  correo         String   @unique @db.VarChar(150)
+  contrasenaHash String   @map("contrasena_hash") @db.VarChar(255)
+  rol            Rol      @default(USUARIO)
+  activo         Boolean  @default(true)
+  fechaCreacion  DateTime @default(now()) @map("fecha_creacion") @db.DateTime(0)
+
+  cargas          CargaDatos[]
+  predicciones    Prediccion[]
+  simulaciones    Simulacion[]
+  configuraciones ConfiguracionAnalisis[]
+
+  @@map("usuario")
+}
+
+// ─── Datos sísmicos ─────────────────────────────────────────────────────────
+
+/// Una carga es un archivo subido por un admin (origen ARCHIVO) o una
+/// sincronización automática con SGC/USGS/UNGRD (origen API, sin usuario).
+model CargaDatos {
+  idCarga          Int         @id @default(autoincrement()) @map("id_carga")
+  idUsuario        Int?        @map("id_usuario")
+  origen           OrigenCarga @default(ARCHIVO)
+  fuente           FuenteDato
+  nombreArchivo    String      @map("nombre_archivo") @db.VarChar(255)
+  registrosLeidos  Int         @map("registros_leidos") @db.UnsignedInt
+  registrosValidos Int         @map("registros_validos") @db.UnsignedInt
+  estado           EstadoCarga
+  fechaCarga       DateTime    @default(now()) @map("fecha_carga") @db.DateTime(0)
+
+  usuario   Usuario?          @relation(fields: [idUsuario], references: [idUsuario])
+  registros RegistroSismico[]
+
+  @@index([fechaCarga])
+  @@map("carga_datos")
+}
+
+/// Magnitud, profundidad y coordenadas son opcionales porque los anómalos se
+/// conservan marcados (es_anomalo + motivo_anomalia) en lugar de borrarse.
+model RegistroSismico {
+  idSismo            Int                 @id @default(autoincrement()) @map("id_sismo")
+  idCarga            Int                 @map("id_carga")
+  /// Identificador del evento en su fuente (ej. SGC2026quenjj, 1979-0491).
+  idEventoOrigen     String              @map("id_evento_origen") @db.VarChar(40)
+  /// SHA-256 de fuente|id_evento_origen|municipio: hace idempotentes las recargas.
+  claveOrigen        String              @unique @map("clave_origen") @db.Char(64)
+  fechaHora          DateTime            @map("fecha_hora") @db.DateTime(0)
+  latitud            Decimal?            @db.Decimal(9, 6)
+  longitud           Decimal?            @db.Decimal(9, 6)
+  precisionUbicacion PrecisionUbicacion? @map("precision_ubicacion")
+  profundidadKm      Decimal?            @map("profundidad_km") @db.Decimal(6, 2)
+  magnitud           Decimal?            @db.Decimal(3, 1)
+  tipoMagnitud       String?             @map("tipo_magnitud") @db.VarChar(8)
+  departamento       String?             @db.VarChar(60)
+  municipio          String?             @db.VarChar(80)
+  /// Zona de análisis: el departamento, salvo el Nido de Bucaramanga.
+  zona               String?             @db.VarChar(60)
+  fuente             FuenteDato
+  nivelImpacto       NivelImpacto?       @map("nivel_impacto")
+  esReplica          Boolean             @default(false) @map("es_replica")
+  esAnomalo          Boolean             @default(false) @map("es_anomalo")
+  motivoAnomalia     String?             @map("motivo_anomalia") @db.VarChar(120)
+
+  carga      CargaDatos  @relation(fields: [idCarga], references: [idCarga])
+  afectacion Afectacion?
+
+  @@index([fechaHora])
+  @@index([departamento, fechaHora])
+  @@index([zona, fechaHora])
+  @@index([magnitud])
+  @@index([fuente, idEventoOrigen])
+  @@map("registro_sismico")
+}
+
+model Afectacion {
+  idAfectacion        Int        @id @default(autoincrement()) @map("id_afectacion")
+  idSismo             Int        @unique @map("id_sismo")
+  fallecidos          Int?       @db.UnsignedInt
+  heridos             Int?       @db.UnsignedInt
+  desaparecidos       Int?       @db.UnsignedInt
+  personasAfectadas   Int?       @map("personas_afectadas") @db.UnsignedInt
+  damnificados        Int?       @db.UnsignedInt
+  viviendasDestruidas Int?       @map("viviendas_destruidas") @db.UnsignedInt
+  viviendasAveriadas  Int?       @map("viviendas_averiadas") @db.UnsignedInt
+  fuente              FuenteDato
+
+  sismo RegistroSismico @relation(fields: [idSismo], references: [idSismo], onDelete: Cascade)
+
+  @@map("afectacion")
+}
+
+// ─── Modelo de impacto ──────────────────────────────────────────────────────
+
+model ModeloPredictivo {
+  idModelo            Int      @id @default(autoincrement()) @map("id_modelo")
+  version             String   @unique @db.VarChar(20)
+  algoritmo           String   @db.VarChar(50)
+  rutaArchivo         String   @map("ruta_archivo") @db.VarChar(255)
+  exactitud           Decimal  @db.Decimal(5, 4)
+  f1Macro             Decimal  @map("f1_macro") @db.Decimal(5, 4)
+  activo              Boolean  @default(false)
+  fechaEntrenamiento  DateTime @default(now()) @map("fecha_entrenamiento") @db.DateTime(0)
+
+  predicciones Prediccion[]
+
+  @@map("modelo_predictivo")
+}
+
+model Prediccion {
+  idPrediccion  Int          @id @default(autoincrement()) @map("id_prediccion")
+  idUsuario     Int          @map("id_usuario")
+  idModelo      Int          @map("id_modelo")
+  magnitud      Decimal      @db.Decimal(3, 1)
+  profundidadKm Decimal      @map("profundidad_km") @db.Decimal(6, 2)
+  latitud       Decimal      @db.Decimal(9, 6)
+  longitud      Decimal      @db.Decimal(9, 6)
+  nivelImpacto  NivelImpacto @map("nivel_impacto")
+  /// Probabilidad de la clase predicha.
+  probabilidad  Decimal      @db.Decimal(5, 4)
+  fecha         DateTime     @default(now()) @db.DateTime(0)
+
+  usuario Usuario          @relation(fields: [idUsuario], references: [idUsuario])
+  modelo  ModeloPredictivo @relation(fields: [idModelo], references: [idModelo])
+
+  @@index([fecha])
+  @@map("prediccion")
+}
+
+// ─── Simulación física ──────────────────────────────────────────────────────
+
+model DispositivoEsp32 {
+  idDispositivo  Int               @id @default(autoincrement()) @map("id_dispositivo")
+  nombre         String            @db.VarChar(80)
+  topicoMqtt     String            @unique @map("topico_mqtt") @db.VarChar(100)
+  estado         EstadoDispositivo @default(DESCONECTADO)
+  ultimaConexion DateTime?         @map("ultima_conexion") @db.DateTime(0)
+
+  simulaciones Simulacion[]
+
+  @@map("dispositivo_esp32")
+}
+
+model Simulacion {
+  idSimulacion     Int         @id @default(autoincrement()) @map("id_simulacion")
+  idUsuario        Int         @map("id_usuario")
+  idDispositivo    Int         @map("id_dispositivo")
+  magnitudSimulada Decimal     @map("magnitud_simulada") @db.Decimal(3, 1)
+  estadoEnvio      EstadoEnvio @default(PENDIENTE) @map("estado_envio")
+  fecha            DateTime    @default(now()) @db.DateTime(0)
+
+  usuario     Usuario          @relation(fields: [idUsuario], references: [idUsuario])
+  dispositivo DispositivoEsp32 @relation(fields: [idDispositivo], references: [idDispositivo])
+
+  @@index([fecha])
+  @@map("simulacion")
+}
+
+// ─── Análisis de frecuencia y advertencias ──────────────────────────────────
+
+/// La configuración vigente es la de fecha_actualizacion más reciente.
+model ConfiguracionAnalisis {
+  idConfig          Int      @id @default(autoincrement()) @map("id_config")
+  idUsuario         Int      @map("id_usuario")
+  ventanaDias       Int      @default(7) @map("ventana_dias") @db.UnsignedTinyInt
+  periodoBaseMeses  Int      @default(12) @map("periodo_base_meses") @db.UnsignedTinyInt
+  umbralElevada     Decimal  @default(0.050) @map("umbral_elevada") @db.Decimal(4, 3)
+  umbralAlta        Decimal  @default(0.001) @map("umbral_alta") @db.Decimal(4, 3)
+  minEventosZona    Int      @default(50) @map("min_eventos_zona") @db.UnsignedSmallInt
+  fechaActualizacion DateTime @default(now()) @map("fecha_actualizacion") @db.DateTime(0)
+
+  usuario  Usuario        @relation(fields: [idUsuario], references: [idUsuario])
+  analisis AnalisisZona[]
+
+  @@index([fechaActualizacion])
+  @@map("configuracion_analisis")
+}
+
+model AnalisisZona {
+  idAnalisis          Int      @id @default(autoincrement()) @map("id_analisis")
+  idConfig            Int      @map("id_config")
+  zona                String   @db.VarChar(60)
+  /// Región con la que se agrupó la zona por tener menos de min_eventos_zona.
+  agrupadaEn          String?  @map("agrupada_en") @db.VarChar(60)
+  periodoInicio       DateTime @map("periodo_inicio") @db.Date
+  periodoFin          DateTime @map("periodo_fin") @db.Date
+  nEventos            Int      @map("n_eventos") @db.UnsignedInt
+  magnitudCompletitud Decimal  @map("magnitud_completitud") @db.Decimal(3, 1)
+  valorA              Decimal  @map("valor_a") @db.Decimal(6, 3)
+  valorB              Decimal  @map("valor_b") @db.Decimal(5, 3)
+  errorB              Decimal  @map("error_b") @db.Decimal(5, 3)
+  tasaAnual           Decimal  @map("tasa_anual") @db.Decimal(8, 3)
+  tauTendencia        Decimal  @map("tau_tendencia") @db.Decimal(5, 3)
+  pValorTendencia     Decimal  @map("p_valor_tendencia") @db.Decimal(6, 5)
+  pendienteSen        Decimal  @map("pendiente_sen") @db.Decimal(8, 4)
+  fechaCalculo        DateTime @default(now()) @map("fecha_calculo") @db.DateTime(0)
+
+  configuracion ConfiguracionAnalisis @relation(fields: [idConfig], references: [idConfig])
+  advertencias  AdvertenciaActividad[]
+
+  @@index([zona, fechaCalculo])
+  @@map("analisis_zona")
+}
+
+model AdvertenciaActividad {
+  idAdvertencia     Int              @id @default(autoincrement()) @map("id_advertencia")
+  idAnalisis        Int              @map("id_analisis")
+  zona              String           @db.VarChar(60)
+  ventanaInicio     DateTime         @map("ventana_inicio") @db.DateTime(0)
+  ventanaFin        DateTime         @map("ventana_fin") @db.DateTime(0)
+  eventosObservados Int              @map("eventos_observados") @db.UnsignedInt
+  eventosEsperados  Decimal          @map("eventos_esperados") @db.Decimal(8, 3)
+  pValor            Decimal          @map("p_valor") @db.Decimal(6, 5)
+  nivel             NivelAdvertencia
+  fechaEmision      DateTime         @default(now()) @map("fecha_emision") @db.DateTime(0)
+
+  analisis AnalisisZona @relation(fields: [idAnalisis], references: [idAnalisis], onDelete: Cascade)
+
+  @@index([zona, fechaEmision])
+  @@index([nivel])
+  @@map("advertencia_actividad")
+}
