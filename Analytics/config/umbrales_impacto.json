@@ -1,0 +1,8 @@
+{
+  "_descripcion": "Reglas para construir nivel_impacto desde las afectaciones. Se evalúan en orden: la primera que se cumple define el nivel; si ninguna se cumple, SIN_AFECTACION. Dentro de un nivel basta con que una condición se cumpla.",
+  "niveles": [
+    {"nivel": "ALTO", "alguna_de": {"fallecidos": 1, "viviendas_destruidas": 50}},
+    {"nivel": "MODERADO", "alguna_de": {"heridos": 1, "viviendas_destruidas": 1}},
+    {"nivel": "BAJO", "alguna_de": {"personas_afectadas": 1, "damnificados": 1, "viviendas_averiadas": 1}}
+  ]
+}
