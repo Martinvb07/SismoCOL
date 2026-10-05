@@ -64,6 +64,8 @@ MAPEO_COLUMNAS: dict[str, list[str]] = {
     "damnificados": ["damnificados"],
     "viviendas_destruidas": ["viviendas_destruidas", "viv_destru"],
     "viviendas_averiadas": ["viviendas_averiadas", "viviendas_afectadas", "viv_aver"],
+    "centros_educativos": ["centros_educativos", "c_educat"],
+    "centros_salud": ["centros_salud", "centros_medicos", "c_salud"],
 }
 COLUMNAS_OBLIGATORIAS = ("fecha", "magnitud", "profundidad_km")
 HOJA_PREFERIDA = "Datos"
@@ -316,7 +318,8 @@ def marcar_duplicados(df: pd.DataFrame) -> pd.DataFrame:
     duplicado = pd.Series(False, index=df.index)
     aptos = df[df.fecha_hora.notna() & df.magnitud.notna() & df.latitud.notna()]
     for fuente, grupo in aptos.groupby("fuente"):
-        g = grupo.sort_values("fecha_hora")
+        # Orden estable: ante empates se conserva el orden del archivo y se marca la copia posterior.
+        g = grupo.sort_values("fecha_hora", kind="mergesort")
         t = g.fecha_hora.to_numpy().astype("datetime64[ms]").astype(np.int64)
         lat, lon = g.latitud.to_numpy(float), g.longitud.to_numpy(float)
         mag = g.magnitud.to_numpy(float)
@@ -354,7 +357,8 @@ def asignar_claves(df: pd.DataFrame) -> pd.DataFrame:
     por fuente|id|municipio. Repeticiones exactas dentro del archivo se marcan."""
     df = df.copy()
     # UNGRD no publica ID de evento (la columna trae el código DIVIPOLA): fecha + municipio.
-    ungrd = df.fuente == "UNGRD"
+    ya_formado = df.id_evento_origen.astype(str).str.fullmatch(r"\d{8}-\d{5}")
+    ungrd = (df.fuente == "UNGRD") & ~ya_formado
     df.loc[ungrd, "id_evento_origen"] = (
         df.loc[ungrd, "fecha_hora"].dt.strftime("%Y%m%d") + "-"
         + df.loc[ungrd, "codigo_municipio"].fillna(df.loc[ungrd, "id_evento_origen"]).astype(str)
@@ -404,6 +408,7 @@ class ResultadoIngesta:
     sin_fuente: int
     por_fuente: list[ReporteFuente] = field(default_factory=list)
     datos: pd.DataFrame | None = None
+    avisos: list[str] = field(default_factory=list)
 
     @property
     def validos(self) -> int:
@@ -443,8 +448,16 @@ def procesar(crudo: pd.DataFrame, nombre_archivo: str, resolvedor: ResolvedorMun
     df = df[df.fecha_hora.notna() & df.fuente.notna()]
 
     df = georreferenciar(df, resolvedor)
-    if obtener_usgs is not None and len(df):
-        df = enriquecer_con_usgs(df, obtener_usgs(df.fecha_hora.min(), df.fecha_hora.max()))
+    avisos: list[str] = []
+    instrumentales = df[df.fuente.isin(["SGC"]) & (df.precision_ubicacion == "CENTROIDE_MUNICIPIO")]
+    if obtener_usgs is not None and len(instrumentales):
+        try:
+            usgs = obtener_usgs(instrumentales.fecha_hora.min(), instrumentales.fecha_hora.max())
+            df = enriquecer_con_usgs(df, usgs)
+        except Exception as error:  # USGS caído no debe impedir la carga
+            avisos.append(f"No se pudo consultar USGS para epicentros ({type(error).__name__}); "
+                          "se usaron centroides municipales.")
+            df["id_usgs"] = None
     else:
         df["id_usgs"] = None
     df = marcar_anomalias(df)
@@ -464,4 +477,4 @@ def procesar(crudo: pd.DataFrame, nombre_archivo: str, resolvedor: ResolvedorMun
             con_afectacion=int(g[COLUMNAS_AFECTACION].notna().any(axis=1).sum()),
         ))
     return ResultadoIngesta(nombre_archivo, mapeo, ignoradas, len(crudo), sin_fecha,
-                            sin_fuente, reportes, df)
+                            sin_fuente, reportes, df, avisos)

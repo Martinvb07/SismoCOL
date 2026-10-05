@@ -5,8 +5,8 @@ from __future__ import annotations
 import io
 
 import pandas as pd
-import requests
 
+from sismocol.fuentes.http import sesion
 from sismocol.geo import BBOX_COLOMBIA
 
 LIMITE_EVENTOS = 20000  # máximo por consulta del servicio FDSN de USGS
@@ -28,7 +28,7 @@ def descargar_eventos(url: str, inicio: pd.Timestamp, fin: pd.Timestamp,
         "orderby": "time-asc",
         "limit": LIMITE_EVENTOS,
     }
-    respuesta = requests.get(url, params=parametros, timeout=timeout_s)
+    respuesta = sesion().get(url, params=parametros, timeout=timeout_s)
     if respuesta.status_code == 204 or not respuesta.text.strip():
         return pd.DataFrame(columns=["id", "time", "latitude", "longitude", "depth", "mag",
                                      "magType", "place"])

@@ -181,6 +181,20 @@ def test_repetidos_exactos_y_id_ungrd(resolvedor, reglas):
     assert df.clave_origen.iloc[0] == df.clave_origen.iloc[1]
 
 
+def test_copias_identicas_marcan_solo_la_posterior(resolvedor, reglas):
+    """Con muchas filas en el mismo instante, el original nunca debe quedar marcado."""
+    base = dict(Fecha="2025-06-08", Fuente_Dataset="UNGRD", Magnitud=6.4, Profundidad_km=15,
+                Muertos=0)
+    municipios = [("Santander", "Los Santos", "68418"), ("Cesar", "Becerril", "20045"),
+                  ("Chocó", "Juradó", "27372"), ("La Guajira", "Hatonuevo", "44378")]
+    filas = [fila(ID_Evento=f"20250608-{c}", Departamento=d, Municipio=m, **base)
+             for d, m, c in municipios]
+    r = ejecutar(filas + filas, resolvedor, reglas)
+    motivos = r.datos.motivo_anomalia.fillna("").tolist()
+    assert motivos[:4] == ["", "", "", ""]
+    assert all("repetido en el archivo" in m for m in motivos[4:])
+
+
 def test_clave_origen_estable(resolvedor, reglas):
     a = ejecutar([fila()], resolvedor, reglas).datos.clave_origen.iloc[0]
     b = ejecutar([fila()], resolvedor, reglas).datos.clave_origen.iloc[0]

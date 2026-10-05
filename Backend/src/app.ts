@@ -1,10 +1,13 @@
 import cors from 'cors';
-import express, { type ErrorRequestHandler } from 'express';
+import express from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { env } from './config/env.js';
+import { manejarErrores } from './lib/errores.js';
 import { logger } from './lib/logger.js';
 import { prisma } from './lib/prisma.js';
+import { rutasAuth } from './modulos/auth/auth.rutas.js';
+import { rutasCargas } from './modulos/cargas/cargas.rutas.js';
 
 export function crearApp() {
   const app = express();
@@ -26,15 +29,13 @@ export function crearApp() {
     }
   });
 
+  app.use('/api/auth', rutasAuth);
+  app.use('/api', rutasCargas);
+
   app.use((_req, res) => {
     res.status(404).json({ error: 'Recurso no encontrado' });
   });
-
-  const manejarError: ErrorRequestHandler = (error, req, res, _next) => {
-    req.log.error({ err: error }, 'Error no controlado');
-    res.status(500).json({ error: 'Error interno del servidor' });
-  };
-  app.use(manejarError);
+  app.use(manejarErrores);
 
   return app;
 }

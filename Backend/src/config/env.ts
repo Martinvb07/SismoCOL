@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+// Mensajes de validación en español para toda la API.
+z.config(z.locales.es());
+
 const secreto = (nombre: string) =>
   z.string().min(32, `${nombre} debe tener al menos 32 caracteres`);
 
@@ -22,6 +25,8 @@ const esquemaEnv = z.object({
 
   ANALYTICS_URL: z.url(),
   ANALYTICS_TOKEN: secreto('ANALYTICS_TOKEN'),
+  // La ingesta de ~100 000 filas tarda alrededor de un minuto; el entrenamiento, más.
+  ANALYTICS_TIMEOUT_MS: z.coerce.number().int().positive().default(600_000),
   UPLOAD_MAX_MB: z.coerce.number().positive().max(100).default(25),
 
   MQTT_URL: z.string().regex(/^mqtts?:\/\//, 'Debe empezar por mqtt:// o mqtts://'),

@@ -30,6 +30,8 @@ class Ajustes(BaseSettings):
     usgs_magnitud_min: float = 2.5
     url_ungrd: str = "https://www.datos.gov.co/resource/2343-nuqp.json"
     http_timeout_s: int = 120
+    # Sincronización diaria (antes del recálculo de las 02:15), formato crontab.
+    cron_sincronizacion: str = "0 2 * * *"
 
     # Ingesta
     tamano_lote_insercion: int = Field(default=2000, ge=100, le=20000)

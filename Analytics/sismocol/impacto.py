@@ -16,6 +16,7 @@ SIN_AFECTACION = "SIN_AFECTACION"
 COLUMNAS_AFECTACION = [
     "fallecidos", "heridos", "desaparecidos", "personas_afectadas",
     "damnificados", "viviendas_destruidas", "viviendas_averiadas",
+    "centros_educativos", "centros_salud",
 ]
 
 

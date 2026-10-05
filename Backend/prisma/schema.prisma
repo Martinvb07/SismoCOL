@@ -154,6 +154,8 @@ model Afectacion {
   damnificados        Int?       @db.UnsignedInt
   viviendasDestruidas Int?       @map("viviendas_destruidas") @db.UnsignedInt
   viviendasAveriadas  Int?       @map("viviendas_averiadas") @db.UnsignedInt
+  centrosEducativos   Int?       @map("centros_educativos") @db.UnsignedInt
+  centrosSalud        Int?       @map("centros_salud") @db.UnsignedInt
   fuente              FuenteDato
 
   sismo RegistroSismico @relation(fields: [idSismo], references: [idSismo], onDelete: Cascade)

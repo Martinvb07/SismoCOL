@@ -46,6 +46,7 @@ interface ReporteCarga {
   leidos: number; validos: number; rechazadosSinFecha: number;
   mapeo: Record<string, string>;          // campo SismoCol → columna del archivo
   columnasIgnoradas: string[];
+  avisos: string[];                       // p. ej. USGS no disponible: se usaron centroides
   porFuente: Array<{
     fuente: Fuente; leidos: number; validos: number; nuevos: number; existentes: number;
     porMotivo: Record<string, number>;    // "profundidad negativa": 366, …
@@ -176,7 +177,7 @@ Los LEDs se derivan de la magnitud y son iguales en el frontend y en el firmware
 |---|---|---|---|
 | POST | `/api/cargas` | Admin | `multipart/form-data`: `archivo` (CSV/XLSX, ≤ 25 MB) y, opcionalmente, `fuente: Fuente` y `zonaHoraria`. Responde `201 { cargas: Carga[], reporte: ReporteCarga }` o `422 { error, detalles }` si el archivo se rechaza |
 | GET | `/api/cargas?pagina&tamano` | Admin | `Paginado<Carga>` |
-| POST | `/api/sincronizaciones` | Admin | Sincroniza con USGS y UNGRD ahora → `201 { cargas: Carga[] }` |
+| POST | `/api/sincronizaciones` | Admin | Sincroniza con USGS y UNGRD ahora → `201 { cargas: Carga[], errores: string[] }` (`errores` lista las fuentes que fallaron, p. ej. `"USGS: ConnectionError"`) |
 | GET | `/api/usuarios?pagina&tamano` | Admin | `Paginado<Usuario>` |
 | POST | `/api/usuarios` | Admin | Cuerpo `{ nombre, correo, contrasena (≥ 10, letras y números), rol }` → `201 Usuario` · `409` si el correo ya existe |
 | PATCH | `/api/usuarios/:id` | Admin | Cuerpo `{ nombre?, rol?, activo?, contrasena? }` → `Usuario`. Un admin no puede desactivarse a sí mismo ni quitarse el rol |

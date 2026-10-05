@@ -45,3 +45,15 @@ Los ejemplos de entrenamiento salen de los reportes de daño de DesInventar y UN
 - Express 5 y Zod 4.
 
 `npm audit` reporta vulnerabilidades en `mysql2`, que es una dependencia **solo del CLI de Prisma** (desarrollo/migraciones) y no se carga en el runtime de la API. Se revisa al actualizar Prisma.
+
+## D9 — Fecha de corte del análisis (2026-10-05)
+El SGC no publica un servicio de eventos accesible: su FDSN responde 404, y sus feeds y su portal devuelven 403. El catálogo disponible termina el 26-ago-2026. Mc, Gutenberg-Richter, la tendencia, las probabilidades y las advertencias se calculan **solo con el catálogo SGC**, con fecha de corte en su último evento, y la interfaz muestra "Datos hasta …". Los sismos posteriores de USGS (M ≥ 2,5) se muestran en la consulta y el mapa, pero no entran en las estadísticas, porque su completitud no es comparable con la del SGC y sesgaría b y las tasas. Cuando el admin carga un CSV más reciente del SGC, la fecha de corte avanza sola.
+
+## D10 — Centros educativos y de salud (2026-10-05)
+Se agregan `afectacion.centros_educativos` y `afectacion.centros_salud` (183 y 62 reportes con valor > 0). No entran en las reglas de `nivel_impacto`. Se descartan reubicados, evacuados, pérdidas en USD y daños en vías, que tienen menos de 25 valores distintos de cero.
+
+## D11 — Reportes UNGRD sin magnitud (2026-10-05)
+La API de la UNGRD no informa magnitud ni profundidad. Se asocia cada reporte al sismo de mayor magnitud a ±1 día y ≤ 150 km del municipio (ver `docs/crisp-dm/03_preparacion_datos.md` §5). El ID de un reporte UNGRD es `fecha-códigoDIVIPOLA`, porque la fuente no publica un ID de evento y la columna `ID_Evento` del Excel trae el código del municipio.
+
+## D12 — Dispositivos visibles para USUARIO (2026-10-05)
+`GET /api/dispositivos/estado` se abre a USUARIO en modo solo lectura, porque la pantalla de simulación necesita mostrar si el ESP32 está en línea. La gestión de dispositivos sigue siendo solo para ADMIN.

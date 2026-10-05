@@ -77,9 +77,33 @@ npm run db:seed           # admin, usuario de prueba, ESP32 y configuración por
 npm run dev               # http://localhost:4000/api/health
 ```
 
-### 3. Servicio analítico y barrido de datos
+### 3. Servicio analítico (Python)
 
-Ver [Analytics/README.md](Analytics/README.md). El Excel va en `data/raw/Sismos_Colombia_FINAL.xlsx`.
+```bash
+cd Analytics
+py -3.11 -m venv .venv                      # Linux: python3.11 -m venv .venv
+.venv/Scripts/python -m pip install -r requirements.txt
+cp .env.example .env                        # misma clave de MySQL y mismo ANALYTICS_TOKEN que Backend/.env
+.venv/Scripts/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+### 4. Frontend
+
+```bash
+cd Frontend
+npm install
+npm run dev                                 # http://localhost:5173
+```
+
+### Orden para trabajar en local
+
+Se usan tres terminales: Analytics (puerto 8000), Backend (`npm run dev`, puerto 4000) y Frontend (puerto 5173). El Excel va en `data/raw/Sismos_Colombia_FINAL.xlsx` y se carga desde **Admin → Datos y modelo**, o con:
+
+```bash
+curl -H "Authorization: Bearer <token>" -F archivo=@data/raw/Sismos_Colombia_FINAL.xlsx http://localhost:4000/api/cargas
+```
+
+Más detalles en [Analytics/README.md](Analytics/README.md) (pruebas, barrido de datos, vista previa de una carga).
 
 ## Metodología
 
