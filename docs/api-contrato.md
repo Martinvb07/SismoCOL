@@ -44,7 +44,7 @@ interface Carga {
 
 interface ReporteCarga {
   leidos: number; validos: number; rechazadosSinFecha: number;
-  mapeo: Record<string, string>;          // campo SismoCol → columna del archivo
+  mapeo: Record<string, string>;          // campo canónico en snake_case (id_evento, profundidad_km, fallecidos…) → columna del archivo
   columnasIgnoradas: string[];
   avisos: string[];                       // p. ej. USGS no disponible: se usaron centroides
   porFuente: Array<{
@@ -79,7 +79,7 @@ interface ConfiguracionAnalisis {
 
 | Método | Ruta | Rol | Cuerpo / parámetros | Respuesta |
 |---|---|---|---|---|
-| POST | `/api/auth/login` | Público | `{ correo, contrasena }` | `200 { token, expiraEn: string, usuario: Usuario }` · `401` credenciales inválidas · `429` |
+| POST | `/api/auth/login` | Público | `{ correo, contrasena }` | `200 { token, expiraEn: string, usuario: Usuario }` · `401` credenciales inválidas **o usuario inactivo** (mismo mensaje, para no revelar qué cuentas existen) · `429` |
 | GET | `/api/auth/yo` | Usuario | — | `200 Usuario` |
 
 ## Sismos y estadísticas
@@ -104,7 +104,7 @@ interface Estadisticas {
   total: number; magnitudMax: number | null; profundidadMediana: number | null;
   rango: { desde: string | null; hasta: string | null };          // fechas extremas del filtro
   porDepartamento: Array<{ departamento: string; total: number; magnitudMax: number }>;
-  histograma: Array<{ desde: number; hasta: number; total: number }>; // bins de 0,5 en magnitud
+  histograma: Array<{ desde: number; hasta: number; total: number }>; // bins de 0,5: [desde, hasta), el último cerrado
   puntos: Array<{ idSismo: number; latitud: number; longitud: number; magnitud: number;
                   profundidadKm: number; fechaHora: string; municipio: string | null }>;
   // puntos: como máximo 5000, priorizando las magnitudes mayores
@@ -118,7 +118,7 @@ Toda respuesta de esta sección incluye `fechaCorte`, la fecha del último dato 
 | Método | Ruta | Rol | Respuesta |
 |---|---|---|---|
 | GET | `/api/analisis/zonas` | Usuario | `Array<{ zona; region; agrupadaEn: string \| null; nEventos }>` |
-| GET | `/api/analisis/frecuencia?zona=` | Usuario | `Frecuencia` |
+| GET | `/api/analisis/frecuencia?zona=` | Usuario | `Frecuencia`. `zona` es siempre el nombre de la zona (p. ej. `Guaviare`), nunca el de la región; si la zona se agrupó, la respuesta trae `agrupadaEn` |
 | GET | `/api/analisis/gutenberg-richter?zona=` | Usuario | `GutenbergRichter` |
 | GET | `/api/analisis/probabilidades` | Usuario | `{ fechaCorte, fechaCalculo, zonas: Array<{ zona; agrupadaEn; probabilidades: Array<{ magnitud: 4 \| 5 \| 6; anios1: number; anios10: number }> }> }` |
 | GET | `/api/advertencias?zona=&nivel=` | Usuario | `{ fechaCorte, datos: Advertencia[] }` |
@@ -150,7 +150,7 @@ interface Advertencia {
 
 | Método | Ruta | Rol | Cuerpo / respuesta |
 |---|---|---|---|
-| POST | `/api/predicciones` | Usuario | Cuerpo `{ magnitud (2–9), profundidadKm (0–700), latitud (−4,3–13,5), longitud (−82–−66,8) }` → `{ idPrediccion, nivelImpacto, probabilidad, probabilidades: Record<NivelImpacto, number>, modelo: { idModelo, version, algoritmo } }` · `503` si no hay modelo activo |
+| POST | `/api/predicciones` | Usuario | Cuerpo `{ magnitud (2–9), profundidadKm (0–700), latitud (−4,3–13,5), longitud (−82–−66,8) }` → `{ idPrediccion, nivelImpacto, probabilidad, probabilidades: Record<NivelImpacto, number>, modelo: { idModelo, version, algoritmo, fechaEntrenamiento } }` · `503` si no hay modelo activo |
 | GET | `/api/modelos` | Admin | `ModeloPredictivo[]` |
 | POST | `/api/modelos/entrenar` | Admin | `201 { modelo: ModeloPredictivo, reporte: { clases: NivelImpacto[]; matrizConfusion: number[][]; porClase: Record<NivelImpacto, { precision; recall; f1; soporte }>; comparacion: Array<{ algoritmo; f1Macro }> } }`. Puede tardar hasta unos 2 minutos |
 | PATCH | `/api/modelos/:id/activar` | Admin | `ModeloPredictivo`. Desactiva los demás |
@@ -175,12 +175,12 @@ Los LEDs se derivan de la magnitud y son iguales en el frontend y en el firmware
 
 | Método | Ruta | Rol | Cuerpo / respuesta |
 |---|---|---|---|
-| POST | `/api/cargas` | Admin | `multipart/form-data`: `archivo` (CSV/XLSX, ≤ 25 MB) y, opcionalmente, `fuente: Fuente` y `zonaHoraria`. Responde `201 { cargas: Carga[], reporte: ReporteCarga }` o `422 { error, detalles }` si el archivo se rechaza |
+| POST | `/api/cargas` | Admin | `multipart/form-data`: `archivo` (CSV/XLSX, ≤ 25 MB) y, opcionalmente, `fuente: Fuente` y `zonaHoraria` (identificador IANA, p. ej. `UTC` o `America/Bogota`; si se omite, se usa la zona propia de cada fuente). Responde `201 { cargas: Carga[], reporte: ReporteCarga }` o `422 { error, detalles }` si el archivo se rechaza |
 | GET | `/api/cargas?pagina&tamano` | Admin | `Paginado<Carga>` |
 | POST | `/api/sincronizaciones` | Admin | Sincroniza con USGS y UNGRD ahora → `201 { cargas: Carga[], errores: string[] }` (`errores` lista las fuentes que fallaron, p. ej. `"USGS: ConnectionError"`) |
 | GET | `/api/usuarios?pagina&tamano` | Admin | `Paginado<Usuario>` |
 | POST | `/api/usuarios` | Admin | Cuerpo `{ nombre, correo, contrasena (≥ 10, letras y números), rol }` → `201 Usuario` · `409` si el correo ya existe |
-| PATCH | `/api/usuarios/:id` | Admin | Cuerpo `{ nombre?, rol?, activo?, contrasena? }` → `Usuario`. Un admin no puede desactivarse a sí mismo ni quitarse el rol |
+| PATCH | `/api/usuarios/:id` | Admin | Cuerpo `{ nombre?, rol?, activo?, contrasena? }` → `Usuario` · `409` si un admin intenta desactivarse a sí mismo o quitarse el rol |
 | GET | `/api/admin/resumen` | Admin | Ver abajo |
 
 ```ts
