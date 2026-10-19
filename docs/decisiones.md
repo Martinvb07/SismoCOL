@@ -57,3 +57,8 @@ La API de la UNGRD no informa magnitud ni profundidad. Se asocia cada reporte al
 
 ## D12 — Dispositivos visibles para USUARIO (2026-10-05)
 `GET /api/dispositivos/estado` se abre a USUARIO en modo solo lectura, porque la pantalla de simulación necesita mostrar si el ESP32 está en línea. La gestión de dispositivos sigue siendo solo para ADMIN.
+
+## D13 — Réplicas y catálogo para las estadísticas (2026-10-19)
+Gardner-Knopoff solo marca `es_replica` entre sismos con **epicentro** (`precision_ubicacion = EPICENTRO`). Con el centroide del municipio (D2) muchos sismos quedan a 0 km entre sí y la ventana espacial pierde sentido: en pruebas con un catálogo sintético de b = 1, el Nido de Bucaramanga perdía más de la mitad de sus eventos como "réplicas" y b caía a 0,80.
+
+Mc, Gutenberg-Richter, la tendencia, las probabilidades y las advertencias usan el **catálogo SGC completo**. Con eso b se recupera (0,998 en la misma prueba), y un enjambre o una secuencia de réplicas sí cuenta como actividad inusual, que es lo que la advertencia debe señalar. El análisis se recalcula después de cada carga, de cada sincronización y al cambiar la configuración. Cada recálculo guarda un lote nuevo en `analisis_zona` y `advertencia_actividad`, y la interfaz muestra el más reciente.

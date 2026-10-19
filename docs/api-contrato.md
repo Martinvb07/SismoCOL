@@ -115,6 +115,8 @@ interface Estadisticas {
 
 Toda respuesta de esta sección incluye `fechaCorte`, la fecha del último dato del catálogo usado. El frontend la muestra como "Datos hasta …".
 
+Si todavía no hay catálogo SGC cargado, estas rutas responden `409` con un mensaje para el usuario. Una zona que no existe responde `404`.
+
 | Método | Ruta | Rol | Respuesta |
 |---|---|---|---|
 | GET | `/api/analisis/zonas` | Usuario | `Array<{ zona; region; agrupadaEn: string \| null; nEventos }>` |

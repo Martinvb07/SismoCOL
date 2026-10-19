@@ -7,13 +7,14 @@ import { manejarErrores } from './lib/errores.js';
 import { logger } from './lib/logger.js';
 import { prisma } from './lib/prisma.js';
 import { rutasAdmin } from './modulos/admin/admin.rutas.js';
+import { rutasAnalisis } from './modulos/analisis/analisis.rutas.js';
 import { rutasAuth } from './modulos/auth/auth.rutas.js';
 import { rutasCargas } from './modulos/cargas/cargas.rutas.js';
 import { rutasSismos } from './modulos/sismos/sismos.rutas.js';
 import { rutasUsuarios } from './modulos/usuarios/usuarios.rutas.js';
 
-// Rutas del contrato que llegan en fases posteriores (análisis, modelo, simulación).
-const RUTAS_PENDIENTES = ['/api/analisis', '/api/advertencias', '/api/predicciones', '/api/modelos', '/api/simulaciones', '/api/dispositivos'];
+// Rutas del contrato que llegan en fases posteriores (modelo, simulación).
+const RUTAS_PENDIENTES = ['/api/predicciones', '/api/modelos', '/api/simulaciones', '/api/dispositivos'];
 
 export function crearApp() {
   const app = express();
@@ -40,6 +41,7 @@ export function crearApp() {
   app.use('/api', rutasSismos);
   app.use('/api', rutasUsuarios);
   app.use('/api', rutasAdmin);
+  app.use('/api', rutasAnalisis);
   app.use(RUTAS_PENDIENTES, (_req, res) => {
     res.status(501).json({ error: 'Esta función todavía no está disponible en el servidor.' });
   });

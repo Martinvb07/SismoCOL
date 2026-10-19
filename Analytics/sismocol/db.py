@@ -17,7 +17,10 @@ from sqlalchemy import Engine, MetaData, Table, create_engine, func, insert, sel
 from sismocol.impacto import COLUMNAS_AFECTACION
 from sismocol.ingest import ResultadoIngesta
 
-TABLAS = ("carga_datos", "registro_sismico", "afectacion", "usuario")
+TABLAS = (
+    "carga_datos", "registro_sismico", "afectacion", "usuario",
+    "configuracion_analisis", "analisis_zona", "advertencia_actividad",
+)
 COLUMNAS_REGISTRO = [
     "id_evento_origen", "clave_origen", "fecha_hora", "latitud", "longitud",
     "precision_ubicacion", "profundidad_km", "magnitud", "tipo_magnitud", "departamento",

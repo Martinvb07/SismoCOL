@@ -16,7 +16,7 @@ from apscheduler.triggers.cron import CronTrigger
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
-from sismocol import db, servicio
+from sismocol import analisis, db, servicio
 from sismocol.config import Ajustes, ajustes
 from sismocol.ingest import FUENTES, ErrorIngesta
 
@@ -33,8 +33,11 @@ def verificar_token(x_token_interno: Annotated[str | None, Header()] = None) -> 
 
 
 def _tarea_sincronizacion() -> None:
-    resultado = servicio.sincronizar(ajustes())
+    cfg = ajustes()
+    resultado = servicio.sincronizar(cfg)
     log.info("Sincronización programada: %s", resultado)
+    # D6: después de sincronizar se recalcula el análisis (aunque no haya datos nuevos, avanza la ventana).
+    analisis.recalcular_en_segundo_plano(cfg.database_url)
 
 
 @asynccontextmanager
@@ -44,6 +47,12 @@ async def ciclo_de_vida(_: FastAPI):
     programador.add_job(_tarea_sincronizacion, CronTrigger.from_crontab(cfg.cron_sincronizacion),
                         id="sincronizacion", max_instances=1, coalesce=True)
     programador.start()
+    # Primer arranque con catálogo pero sin análisis guardado (p. ej. tras cargar el Excel en una versión anterior).
+    try:
+        if not analisis.hay_analisis(cfg.database_url):
+            analisis.recalcular_en_segundo_plano(cfg.database_url)
+    except Exception:
+        log.exception("No se pudo comprobar el análisis guardado")
     log.info("Programador iniciado: sincronización '%s' (%s)", cfg.cron_sincronizacion,
              cfg.zona_horaria)
     try:
@@ -56,6 +65,16 @@ app = FastAPI(title="SismoCol Analytics", version="0.2.0", lifespan=ciclo_de_vid
               docs_url=None, redoc_url=None, openapi_url=None)
 Protegido = Annotated[None, Depends(verificar_token)]
 Config = Annotated[Ajustes, Depends(ajustes)]
+
+
+@app.exception_handler(analisis.ZonaNoEncontrada)
+async def manejar_zona(_, error: analisis.ZonaNoEncontrada) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"error": str(error)})
+
+
+@app.exception_handler(analisis.SinDatos)
+async def manejar_sin_datos(_, error: analisis.SinDatos) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"error": str(error)})
 
 
 @app.exception_handler(ErrorIngesta)
@@ -87,10 +106,52 @@ def ingerir(
     contenido = archivo.file.read(int(cfg.max_mb_archivo * BYTES_POR_MB) + 1)
     if len(contenido) > cfg.max_mb_archivo * BYTES_POR_MB:
         raise HTTPException(status_code=413, detail=f"El archivo supera {cfg.max_mb_archivo:g} MB")
-    return servicio.ingerir_archivo(cfg, contenido, archivo.filename or "archivo",
-                                    id_usuario=id_usuario, fuente=fuente, zona_horaria=zona_horaria)
+    resultado = servicio.ingerir_archivo(cfg, contenido, archivo.filename or "archivo",
+                                         id_usuario=id_usuario, fuente=fuente, zona_horaria=zona_horaria)
+    analisis.recalcular_en_segundo_plano(cfg.database_url)
+    return resultado
 
 
 @app.post("/sync", status_code=201)
 def sincronizar(_: Protegido, cfg: Config) -> dict[str, object]:
-    return servicio.sincronizar(cfg)
+    resultado = servicio.sincronizar(cfg)
+    analisis.recalcular_en_segundo_plano(cfg.database_url)
+    return resultado
+
+
+# ─── Análisis de frecuencia (fase 4) ────────────────────────────────────────
+
+NIVELES = ("NORMAL", "ELEVADA", "ALTA")
+
+
+@app.get("/analisis/zonas")
+def zonas(_: Protegido, cfg: Config) -> list[dict[str, object]]:
+    return analisis.lista_zonas(cfg.database_url)
+
+
+@app.get("/analisis/frecuencia")
+def frecuencia(_: Protegido, cfg: Config, zona: str) -> dict[str, object]:
+    return analisis.frecuencia(cfg.database_url, zona)
+
+
+@app.get("/analisis/gutenberg-richter")
+def gutenberg_richter(_: Protegido, cfg: Config, zona: str) -> dict[str, object]:
+    return analisis.gutenberg_richter(cfg.database_url, zona)
+
+
+@app.get("/analisis/probabilidades")
+def probabilidades(_: Protegido, cfg: Config) -> dict[str, object]:
+    return analisis.probabilidades(cfg.database_url)
+
+
+@app.get("/analisis/advertencias")
+def advertencias(_: Protegido, cfg: Config, zona: str | None = None, nivel: str | None = None) -> dict[str, object]:
+    if nivel is not None and nivel not in NIVELES:
+        raise HTTPException(status_code=400, detail=f"Nivel no válido: {nivel}")
+    return analisis.advertencias(cfg.database_url, zona, nivel)
+
+
+@app.post("/analisis/recalcular", status_code=202)
+def recalcular(_: Protegido, cfg: Config) -> dict[str, object]:
+    iniciado = analisis.recalcular_en_segundo_plano(cfg.database_url)
+    return {"iniciado": iniciado}
