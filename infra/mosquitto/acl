@@ -1,0 +1,12 @@
+# Permisos por usuario (Mosquitto 2.x). Copiar a /etc/mosquitto/acl.
+# La API publica simulaciones y escucha ACK y latidos; el ESP32, al revés.
+
+user sismocol-api
+topic write sismos/simulacion
+topic read sismos/estado
+topic read sismos/latido
+
+user sismocol-esp32
+topic read sismos/simulacion
+topic write sismos/estado
+topic write sismos/latido

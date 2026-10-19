@@ -11,11 +11,10 @@ import { rutasAnalisis } from './modulos/analisis/analisis.rutas.js';
 import { rutasAuth } from './modulos/auth/auth.rutas.js';
 import { rutasCargas } from './modulos/cargas/cargas.rutas.js';
 import { rutasModelos } from './modulos/modelos/modelos.rutas.js';
+import { rutasSimulaciones } from './modulos/simulaciones/simulaciones.rutas.js';
 import { rutasSismos } from './modulos/sismos/sismos.rutas.js';
 import { rutasUsuarios } from './modulos/usuarios/usuarios.rutas.js';
 
-// Rutas del contrato que llegan en una fase posterior (simulación).
-const RUTAS_PENDIENTES = ['/api/simulaciones', '/api/dispositivos'];
 
 export function crearApp() {
   const app = express();
@@ -44,9 +43,7 @@ export function crearApp() {
   app.use('/api', rutasAdmin);
   app.use('/api', rutasAnalisis);
   app.use('/api', rutasModelos);
-  app.use(RUTAS_PENDIENTES, (_req, res) => {
-    res.status(501).json({ error: 'Esta función todavía no está disponible en el servidor.' });
-  });
+  app.use('/api', rutasSimulaciones);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Recurso no encontrado' });

@@ -16,7 +16,7 @@ Es la fuente de verdad entre `Frontend/` y `Backend/`. Si algo cambia, se actual
   ```json
   { "error": "Mensaje para el usuario", "detalles": [{ "campo": "magnitud", "mensaje": "Debe estar entre 2 y 8" }] }
   ```
-  Los códigos son 400 (validación), 401, 403, 404, 409 (conflicto), 422 (archivo rechazado), 429 (rate limit), 500, 501 (ruta de una fase aún no implementada) y 502/503 (el servicio analítico no responde).
+  Los códigos son 400 (validación), 401, 403, 404, 409 (conflicto), 422 (archivo rechazado), 429 (rate limit), 500 y 502/503 (el servicio analítico no responde).
 
 ## Tipos compartidos
 

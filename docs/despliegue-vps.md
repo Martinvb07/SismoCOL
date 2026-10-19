@@ -102,3 +102,37 @@ En GitHub → Settings → Environments, crear `produccion` con estos secretos:
 | `VPS_SSH_KEY` | clave privada SSH cuya pública está en `~/.ssh/authorized_keys` del VPS |
 
 Se puede reutilizar la misma clave de ReservaTuCancha.
+
+## 3. MQTT para la simulación (Mosquitto)
+
+La API publica las simulaciones y el ESP32 las recibe a través de Mosquitto en el VPS. El ESP32 se conecta desde otra red (Wi-Fi de la universidad o de la casa), así que el puerto 1883 queda abierto pero **con usuario y clave**, y cada usuario solo puede usar sus tópicos (`infra/mosquitto/acl`).
+
+```bash
+apt install -y mosquitto mosquitto-clients
+cp /var/www/SismoCOL/infra/mosquitto/mosquitto.conf /etc/mosquitto/conf.d/sismocol.conf
+cp /var/www/SismoCOL/infra/mosquitto/acl /etc/mosquitto/acl
+
+# Claves: genere dos distintas y guárdelas
+node -e "console.log(require('crypto').randomBytes(18).toString('base64url'))"
+mosquitto_passwd -c /etc/mosquitto/passwd sismocol-api      # pide la clave de la API
+mosquitto_passwd    /etc/mosquitto/passwd sismocol-esp32    # pide la clave del ESP32
+chown mosquitto:mosquitto /etc/mosquitto/passwd /etc/mosquitto/acl
+chmod 600 /etc/mosquitto/passwd
+
+systemctl enable --now mosquitto && systemctl restart mosquitto
+ufw allow 1883/tcp            # solo si usa ufw
+```
+
+En `Backend/.env`:
+
+```
+MQTT_URL=mqtt://localhost:1883
+MQTT_USERNAME=sismocol-api
+MQTT_PASSWORD=<clave de sismocol-api>
+```
+
+Después: `pm2 restart sismocol-api --update-env`. En el log (`pm2 logs sismocol-api`) debe aparecer `MQTT conectado`.
+
+El ESP32 usa `MQTT_HOST "sismocol.trabajosucc.site"`, el usuario `sismocol-esp32` y su clave en `Firmware/esp32/include/secrets.h` (ver `Firmware/esp32/README.md`).
+
+Sin Mosquitto la API funciona igual: las simulaciones quedan **FALLIDA** y el dispositivo aparece desconectado.
