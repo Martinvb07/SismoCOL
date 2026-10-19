@@ -31,10 +31,10 @@ jobs:
             Backend/package-lock.json
             Frontend/package-lock.json
 
-      - name: Python 3.11 + caché de pip
+      - name: Python 3.12 (la del VPS, Ubuntu 24.04) + caché de pip
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: pip
           cache-dependency-path: Analytics/requirements.txt
 
@@ -113,7 +113,7 @@ jobs:
             printf 'VITE_API_URL=\nVITE_USAR_MOCKS=false\n' > Frontend/.env.production
             (cd Frontend && npm ci && npm run build)
             (cd Analytics \
-              && { [ -x .venv/bin/python ] || python3.11 -m venv .venv; } \
+              && { [ -x .venv/bin/python ] || python3 -m venv .venv; } \
               && .venv/bin/python -m pip install -q -r requirements.txt)
           }
 

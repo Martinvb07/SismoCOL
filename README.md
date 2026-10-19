@@ -45,7 +45,7 @@ No se usa Docker. En desarrollo y en el VPS, MySQL 8 y Mosquitto se instalan nat
 ## Requisitos
 
 - Node.js ≥ 20 y npm
-- Python 3.11
+- Python 3.11 o 3.12 (el VPS usa 3.12)
 - MySQL 8
 - Mosquitto 2, a partir de la fase 6
 

@@ -9,7 +9,7 @@ Ruta en el VPS: `/var/www/SismoCOL`.
 | `sismocol-analytics` (PM2) | 8100 | No, solo `127.0.0.1` |
 | Frontend | — | Nginx sirve `Frontend/dist` |
 
-ReservaTuCancha ya usa 3000 y 4000 en el mismo VPS. Antes de instalar, revisar que 4100 y 8100 estén libres:
+El VPS ya tiene otros proyectos en 3000–3020, 4000–4010, 6010, 27017, 3306 y 33060; 4100 y 8100 están libres (revisado el 2026-10-19). Para volver a comprobarlo:
 
 ```bash
 sudo ss -tulpn | grep LISTEN                 # todo lo que escucha y qué proceso
@@ -23,7 +23,8 @@ Si alguno está ocupado, cambiarlo en `ecosystem.config.js`, `infra/nginx/sismoc
 ## 1. Instalación inicial (una sola vez)
 
 ```bash
-# Python 3.11 (Ubuntu): sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt install python3.11 python3.11-venv
+# Se usa el Python del sistema (3.12 en Ubuntu 24.04); solo hace falta el módulo venv:
+apt install -y python3-venv
 cd /var/www
 git clone https://github.com/Martinvb07/SismoCOL.git
 cd SismoCOL
@@ -67,7 +68,7 @@ cd /var/www/SismoCOL
 (cd Backend && npm ci && npm run build && npx prisma migrate deploy && npm run db:seed)
 printf 'VITE_API_URL=\nVITE_USAR_MOCKS=false\n' > Frontend/.env.production
 (cd Frontend && npm ci && npm run build)
-(cd Analytics && python3.11 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt)
+(cd Analytics && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt)
 
 pm2 startOrReload ecosystem.config.js
 pm2 save
@@ -96,7 +97,7 @@ En GitHub → Settings → Environments, crear `produccion` con estos secretos:
 | Secreto | Valor |
 |---|---|
 | `VPS_HOST` | `31.220.52.31` |
-| `VPS_USER` | usuario SSH del VPS (el mismo que corre PM2) |
+| `VPS_USER` | `root` (el usuario que corre PM2) |
 | `VPS_PATH` | `/var/www/SismoCOL` |
 | `VPS_SSH_KEY` | clave privada SSH cuya pública está en `~/.ssh/authorized_keys` del VPS |
 
