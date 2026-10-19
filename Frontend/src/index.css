@@ -123,6 +123,9 @@
   /* ---------- Tablas ---------- */
   .tabla {
     @apply w-full border-collapse text-left text-sm;
+    /* Bloque contenedor de los .sr-only de las celdas: sin esto escapan del
+       overflow-x-auto que envuelve la tabla y ensanchan la página en el celular. */
+    position: relative;
   }
   .tabla th {
     @apply border-b border-borde bg-superficie-2 px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider text-tinta-tenue;
@@ -147,6 +150,8 @@
   }
   .armazon-principal {
     @apply flex min-w-0 flex-col;
+    /* Nada del contenido debe dar scroll horizontal a la página (clip no rompe el sticky). */
+    overflow-x: clip;
   }
 
   .lateral {
