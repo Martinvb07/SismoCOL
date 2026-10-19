@@ -34,7 +34,7 @@ const esquemaCampos = z.object({
     .optional(),
 });
 
-const SELECCION_CARGA = {
+export const SELECCION_CARGA = {
   idCarga: true,
   origen: true,
   fuente: true,
@@ -48,7 +48,7 @@ const SELECCION_CARGA = {
 
 type CargaBd = Prisma.CargaDatosGetPayload<{ select: typeof SELECCION_CARGA }>;
 
-function aCarga(c: CargaBd) {
+export function aCarga(c: CargaBd) {
   return { ...c, fechaCarga: c.fechaCarga.toISOString() };
 }
 
