@@ -1,6 +1,6 @@
 # Despliegue en el VPS (PM2 + Nginx)
 
-Dominio: `sismocol.trabajosucc.com` → registro A `sismocol` → `31.220.52.31`.
+Dominio: `sismocol.trabajosucc.site` → registro A `sismocol` → `31.220.52.31`.
 Ruta en el VPS: `/var/www/SismoCOL`.
 
 | Proceso | Puerto | Expuesto |
@@ -53,7 +53,7 @@ En `Backend/.env`:
 ```
 NODE_ENV=production
 PORT=4100
-CORS_ORIGINS=https://sismocol.trabajosucc.com
+CORS_ORIGINS=https://sismocol.trabajosucc.site
 DATABASE_URL=mysql://sismocol:una-clave-segura@localhost:3306/sismocol
 ANALYTICS_URL=http://127.0.0.1:8100
 ```
@@ -82,7 +82,7 @@ curl http://127.0.0.1:8100/health
 sudo cp infra/nginx/sismocol.conf /etc/nginx/sites-available/sismocol
 sudo ln -s /etc/nginx/sites-available/sismocol /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d sismocol.trabajosucc.com
+sudo certbot --nginx -d sismocol.trabajosucc.site
 ```
 
 ## 2. CI/CD (GitHub Actions)
