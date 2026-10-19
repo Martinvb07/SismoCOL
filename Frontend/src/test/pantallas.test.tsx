@@ -2,7 +2,7 @@
  * Prueba de humo: con los mocks de MSW se inicia sesión y se recorren las pantallas.
  * Verifica que cada vista renderiza sus secciones principales sin errores.
  */
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -33,6 +33,8 @@ async function irA(usuario: ReturnType<typeof userEvent.setup>, enlace: string) 
   const menu = screen.getByRole('complementary', { name: 'Menú principal' });
   await usuario.click(within(menu).getByRole('link', { name: enlace }));
   await screen.findByRole('heading', { level: 1, name: enlace }, ESPERA);
+  // El título está en la barra superior; la vista termina de cargar después.
+  await waitFor(() => expect(screen.queryByText('Cargando vista…')).not.toBeInTheDocument(), ESPERA);
 }
 
 describe('pantallas con datos simulados', () => {

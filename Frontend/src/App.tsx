@@ -6,7 +6,7 @@ import { useSesion } from './auth/sesion';
 import { RutaProtegida } from './auth/RutaProtegida';
 import { Layout } from './componentes/layout/Layout';
 import { RUTAS } from './componentes/layout/navegacion';
-import { EstadoCargando } from './componentes/ui/Estados';
+import { Splash } from './componentes/ui/Marca';
 import { crearClienteConsultas } from './lib/clienteConsultas';
 import { PaginaLogin } from './paginas/Login';
 import { PaginaNoEncontrada, PaginaSinPermiso } from './paginas/Errores';
@@ -27,7 +27,7 @@ function Inicio() {
 
 export function Rutas() {
   return (
-    <Suspense fallback={<EstadoCargando texto="Cargando vista…" alto="h-screen" />}>
+    <Suspense fallback={<Splash texto="Cargando SismoCol" detalle="Preparando la vista" />}>
       <Routes>
         <Route path="/login" element={<PaginaLogin />} />
         <Route path="/" element={<Inicio />} />

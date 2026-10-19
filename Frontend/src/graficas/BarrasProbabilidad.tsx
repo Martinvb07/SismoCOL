@@ -64,7 +64,7 @@ export function BarrasProbabilidad({ probabilidades, seleccionada }: Props) {
                     textAnchor="end"
                     fontSize={12}
                     fontWeight={esSeleccionada ? 700 : 400}
-                    fill="#1b2a30"
+                    fill="var(--grafica-tinta)"
                   >
                     {estilo.etiqueta}
                   </text>
@@ -73,7 +73,7 @@ export function BarrasProbabilidad({ probabilidades, seleccionada }: Props) {
                     y={yBanda}
                     width={x(1) - MARGENES.izquierda}
                     height={y.bandwidth()}
-                    fill="#f3f5f7"
+                    fill="var(--grafica-pista)"
                     rx={ESTILO_GRAFICA.radioBarra}
                   />
                   <rect
@@ -83,7 +83,7 @@ export function BarrasProbabilidad({ probabilidades, seleccionada }: Props) {
                     height={y.bandwidth()}
                     fill={estilo.relleno}
                     rx={ESTILO_GRAFICA.radioBarra}
-                    stroke={esSeleccionada ? '#1b2a30' : 'none'}
+                    stroke={esSeleccionada ? 'var(--grafica-tinta)' : 'none'}
                     strokeWidth={esSeleccionada ? 1.5 : 0}
                   />
                   <text
@@ -92,7 +92,7 @@ export function BarrasProbabilidad({ probabilidades, seleccionada }: Props) {
                     dy="0.35em"
                     fontSize={12}
                     fontWeight={600}
-                    fill="#1b2a30"
+                    fill="var(--grafica-tinta)"
                     className="tabular-nums"
                   >
                     {formatearPorcentaje(valor)}

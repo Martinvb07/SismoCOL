@@ -28,9 +28,9 @@ const ALTO_POR_DEFECTO = 480;
 const RADIO_MINIMO = 1.5;
 const RADIO_MAXIMO = 14;
 const MAGNITUD_MAXIMA_ESCALA = 7;
-const RELLENO_DEPARTAMENTO = '#e9eef1';
-const RELLENO_RESALTADO = '#cfe8ee';
-const BORDE_DEPARTAMENTO = '#b8c4ca';
+const RELLENO_DEPARTAMENTO = 'var(--mapa-relleno)';
+const RELLENO_RESALTADO = 'var(--mapa-resaltado)';
+const BORDE_DEPARTAMENTO = 'var(--mapa-borde)';
 const DECIMALES_COORDENADA = 4;
 
 export function MapaColombia({
@@ -92,7 +92,7 @@ export function MapaColombia({
           return (
             <>
               {alHacerClic && (
-                <rect x={0} y={0} width={ancho} height={alto} fill="#f7fbfc" className="cursor-crosshair" onClick={manejarClic} />
+                <rect x={0} y={0} width={ancho} height={alto} fill="var(--mapa-fondo)" className="cursor-crosshair" onClick={manejarClic} />
               )}
               <g pointerEvents={alHacerClic ? 'none' : undefined}>
                 {coleccion.features.map((f: Feature<Geometry, PropiedadesDepartamento>) => (
@@ -129,8 +129,8 @@ export function MapaColombia({
               </g>
               {posMarcador && (
                 <g transform={`translate(${posMarcador[0]},${posMarcador[1]})`} pointerEvents="none">
-                  <circle r={9} fill="none" stroke="#14323b" strokeWidth={2} />
-                  <circle r={3} fill="#14323b" />
+                  <circle r={9} fill="none" stroke="var(--grafica-tinta)" strokeWidth={2} />
+                  <circle r={3} fill="var(--grafica-tinta)" />
                 </g>
               )}
             </>

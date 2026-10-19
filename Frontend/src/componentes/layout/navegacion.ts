@@ -14,6 +14,8 @@ import {
 export interface ItemNavegacion {
   ruta: string;
   titulo: string;
+  /** Subtítulo de la barra superior. */
+  descripcion: string;
   icono: ComponentType<SVGProps<SVGSVGElement>>;
   roles: readonly Rol[];
   seccion: 'principal' | 'administracion';
@@ -34,22 +36,76 @@ export const RUTAS = {
 } as const;
 
 export const ITEMS_NAVEGACION: readonly ItemNavegacion[] = [
-  { ruta: RUTAS.consulta, titulo: 'Consulta de sismos', icono: IconoMapa, roles: TODOS, seccion: 'principal' },
-  { ruta: RUTAS.analisis, titulo: 'Análisis y advertencias', icono: IconoGrafica, roles: TODOS, seccion: 'principal' },
-  { ruta: RUTAS.prediccion, titulo: 'Predicción de impacto', icono: IconoObjetivo, roles: TODOS, seccion: 'principal' },
-  { ruta: RUTAS.simulacion, titulo: 'Simulación', icono: IconoChip, roles: TODOS, seccion: 'principal' },
-  { ruta: RUTAS.adminPanel, titulo: 'Panel', icono: IconoPanel, roles: SOLO_ADMIN, seccion: 'administracion' },
-  { ruta: RUTAS.adminDatos, titulo: 'Datos y modelo', icono: IconoBaseDatos, roles: SOLO_ADMIN, seccion: 'administracion' },
+  {
+    ruta: RUTAS.consulta,
+    titulo: 'Consulta de sismos',
+    descripcion: 'Filtra el catálogo, míralo en el mapa y descárgalo en CSV',
+    icono: IconoMapa,
+    roles: TODOS,
+    seccion: 'principal',
+  },
+  {
+    ruta: RUTAS.analisis,
+    titulo: 'Análisis y advertencias',
+    descripcion: 'Frecuencia por zona, Gutenberg-Richter, tendencia y advertencias',
+    icono: IconoGrafica,
+    roles: TODOS,
+    seccion: 'principal',
+  },
+  {
+    ruta: RUTAS.prediccion,
+    titulo: 'Predicción de impacto',
+    descripcion: 'Nivel de impacto estimado de un sismo hipotético',
+    icono: IconoObjetivo,
+    roles: TODOS,
+    seccion: 'principal',
+  },
+  {
+    ruta: RUTAS.simulacion,
+    titulo: 'Simulación',
+    descripcion: 'Envía una magnitud al prototipo ESP32',
+    icono: IconoChip,
+    roles: TODOS,
+    seccion: 'principal',
+  },
+  {
+    ruta: RUTAS.adminPanel,
+    titulo: 'Panel',
+    descripcion: 'Resumen de datos, usuarios, modelo y dispositivo',
+    icono: IconoPanel,
+    roles: SOLO_ADMIN,
+    seccion: 'administracion',
+  },
+  {
+    ruta: RUTAS.adminDatos,
+    titulo: 'Datos y modelo',
+    descripcion: 'Carga de archivos, sincronización y entrenamiento',
+    icono: IconoBaseDatos,
+    roles: SOLO_ADMIN,
+    seccion: 'administracion',
+  },
   {
     ruta: RUTAS.adminConfiguracion,
     titulo: 'Configuración del análisis',
+    descripcion: 'Ventanas, umbrales y mínimo de eventos por zona',
     icono: IconoAjustes,
     roles: SOLO_ADMIN,
     seccion: 'administracion',
   },
-  { ruta: RUTAS.adminUsuarios, titulo: 'Usuarios', icono: IconoUsuarios, roles: SOLO_ADMIN, seccion: 'administracion' },
+  {
+    ruta: RUTAS.adminUsuarios,
+    titulo: 'Usuarios',
+    descripcion: 'Cuentas, roles y accesos',
+    icono: IconoUsuarios,
+    roles: SOLO_ADMIN,
+    seccion: 'administracion',
+  },
 ];
 
+export function itemDeRuta(ruta: string): ItemNavegacion | undefined {
+  return ITEMS_NAVEGACION.find((item) => item.ruta === ruta);
+}
+
 export function tituloDeRuta(ruta: string): string {
-  return ITEMS_NAVEGACION.find((item) => item.ruta === ruta)?.titulo ?? 'SismoCol';
+  return itemDeRuta(ruta)?.titulo ?? 'SismoCol';
 }

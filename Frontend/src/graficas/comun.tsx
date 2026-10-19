@@ -91,7 +91,7 @@ export function Tooltip({ x, y, anchoContenedor, children }: { x: number; y: num
   return (
     <div
       role="tooltip"
-      className="pointer-events-none absolute z-10 min-w-[10rem] max-w-[16rem] rounded-md border border-borde bg-white px-3 py-2 text-xs text-tinta shadow-lg"
+      className="pointer-events-none absolute z-10 min-w-[10rem] max-w-[16rem] rounded-xl border border-borde bg-superficie px-3 py-2 text-xs text-tinta shadow-elevada"
       style={{
         left: haciaIzquierda ? undefined : x + DESPLAZAMIENTO_TOOLTIP,
         right: haciaIzquierda && anchoContenedor !== undefined ? anchoContenedor - x + DESPLAZAMIENTO_TOOLTIP : undefined,

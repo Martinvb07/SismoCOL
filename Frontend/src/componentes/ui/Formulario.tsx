@@ -1,7 +1,7 @@
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 
 export const CLASES_CONTROL =
-  'block w-full rounded-md border border-borde bg-white px-3 py-2 text-sm text-tinta placeholder:text-tinta-tenue focus:border-primario focus:outline-none focus:ring-2 focus:ring-primario/40 disabled:bg-fondo aria-[invalid=true]:border-[#d23c3c]';
+  'block w-full rounded-xl border border-borde bg-superficie px-3 py-2.5 text-sm text-tinta transition-[border-color,box-shadow] duration-200 placeholder:text-tinta-tenue hover:border-tinta-tenue/50 focus:border-primario focus:outline-none focus:ring-4 focus:ring-primario/15 disabled:bg-superficie-2 aria-[invalid=true]:border-peligro';
 
 interface PropsCampo {
   etiqueta: string;
@@ -29,7 +29,7 @@ export function Campo({ etiqueta, error, ayuda, children, className = '' }: Prop
         </p>
       )}
       {error && (
-        <p id={idError} className="mt-1 text-xs font-medium text-[#b42828]">
+        <p id={idError} className="mt-1 text-xs font-medium text-peligro">
           {error}
         </p>
       )}

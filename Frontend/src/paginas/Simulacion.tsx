@@ -26,7 +26,7 @@ function EstadoDispositivo({ d }: { d: Dispositivo }) {
       <div className="text-right">
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
-            enLinea ? 'bg-primario text-white' : 'bg-[#5f6f75] text-white'
+            enLinea ? 'bg-primario text-white' : 'bg-neutro text-white'
           }`}
         >
           <span aria-hidden="true" className={`h-2 w-2 rounded-full ${enLinea ? 'animate-pulse bg-white' : 'bg-white/60'}`} />

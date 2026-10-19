@@ -33,7 +33,7 @@ export function Modal({ abierto, titulo, alCerrar, children }: Props) {
         e.preventDefault();
         alCerrar();
       }}
-      className="w-[min(32rem,calc(100vw-2rem))] rounded-lg border border-borde p-0 shadow-xl backdrop:bg-lateral/60"
+      className="w-[min(32rem,calc(100vw-2rem))] rounded-2xl border border-borde bg-superficie p-0 text-tinta shadow-elevada backdrop:bg-black/60 backdrop:backdrop-blur-sm"
     >
       {abierto && (
         <div className="p-5">

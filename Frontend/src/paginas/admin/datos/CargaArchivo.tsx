@@ -68,7 +68,7 @@ export function CargaArchivo() {
         <p className="text-sm text-tinta-secundaria">
           Arrastra aquí un archivo CSV o XLSX (máx. {formatearBytes(TAMANO_MAXIMO_ARCHIVO_BYTES)}) o
         </p>
-        <label htmlFor={idEntrada} className="cursor-pointer rounded-md border border-borde bg-white px-3 py-1.5 text-sm font-medium text-tinta hover:bg-fondo focus-within:ring-2 focus-within:ring-primario">
+        <label htmlFor={idEntrada} className="cursor-pointer rounded-xl border border-borde bg-superficie px-3 py-1.5 text-sm font-medium text-tinta hover:bg-fondo focus-within:ring-2 focus-within:ring-primario">
           Elegir archivo
           <input
             id={idEntrada}

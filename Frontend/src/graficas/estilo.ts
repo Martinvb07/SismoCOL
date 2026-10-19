@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react';
 
-/** Tokens visuales compartidos por las gráficas (ejes recesivos, marcas finas). */
+/** Tokens visuales compartidos por las gráficas (ejes recesivos, marcas finas). Los colores siguen el tema (src/index.css). */
 export const ESTILO_GRAFICA = {
-  colorEje: '#5f6f75',
-  colorRejilla: '#e6ebee',
-  colorPrimario: '#1f8fa6',
-  colorSecundario: '#14323b',
-  colorAcento: '#8a5cc2',
+  colorEje: 'var(--grafica-eje)',
+  colorRejilla: 'var(--grafica-rejilla)',
+  colorPrimario: 'var(--grafica-primario)',
+  colorSecundario: 'var(--grafica-secundario)',
+  colorAcento: 'var(--grafica-acento)',
   tamanoTexto: 11,
   grosorLinea: 2,
   radioBarra: 3,

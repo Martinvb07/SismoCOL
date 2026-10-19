@@ -17,7 +17,7 @@ export function EstadoCargando({ texto = 'Cargando…', alto = 'h-40' }: { texto
 
 export function EstadoError({ error, alReintentar }: { error: unknown; alReintentar?: () => void }) {
   return (
-    <div role="alert" className="flex flex-col items-center justify-center gap-3 rounded-md border border-[#eea3a3] bg-[#fbe3e3] px-4 py-6 text-center text-sm text-[#931f1f]">
+    <div role="alert" className="flex flex-col items-center justify-center gap-3 animate-entrada rounded-xl border border-peligro-borde bg-peligro-fondo px-4 py-6 text-center text-sm text-peligro-texto">
       <IconoAlerta className="h-6 w-6" />
       <p>{mensajeDeError(error)}</p>
       {alReintentar && (
@@ -31,7 +31,7 @@ export function EstadoError({ error, alReintentar }: { error: unknown; alReinten
 
 export function EstadoVacio({ titulo = 'Sin datos', children }: { titulo?: string; children?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed border-borde px-4 py-8 text-center text-sm text-tinta-tenue">
+    <div className="flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-borde px-4 py-8 text-center text-sm text-tinta-tenue">
       <IconoInfo className="h-6 w-6" />
       <p className="font-medium text-tinta-secundaria">{titulo}</p>
       {children}
@@ -61,7 +61,7 @@ export function AvisoAlcance({ fechaCorte }: { fechaCorte?: string | null }) {
   return (
     <aside
       aria-label="Aviso de alcance"
-      className="flex flex-col gap-1 rounded-md border border-[#f0d77a] bg-[#fdf5d8] px-4 py-3 text-sm text-[#5c4600] sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+      className="flex flex-col gap-1 rounded-xl border border-aviso-borde bg-aviso-fondo px-4 py-3 text-sm text-aviso-texto sm:flex-row sm:items-start sm:justify-between sm:gap-4"
     >
       <p className="flex gap-2">
         <IconoAlerta className="mt-0.5 shrink-0" />

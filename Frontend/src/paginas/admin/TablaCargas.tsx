@@ -23,7 +23,7 @@ export function FilaCarga({ c }: { c: Carga }) {
       </td>
       <td className="text-right tabular-nums">{formatearEntero(c.registrosLeidos)}</td>
       <td className="text-right tabular-nums">{formatearEntero(c.registrosValidos)}</td>
-      <td>{c.estado === 'PROCESADO' ? 'Procesado' : <strong className="text-[#b42828]">Rechazado</strong>}</td>
+      <td>{c.estado === 'PROCESADO' ? 'Procesado' : <strong className="text-peligro">Rechazado</strong>}</td>
       <td>{c.usuario?.nombre ?? 'Automática'}</td>
     </tr>
   );

@@ -29,7 +29,7 @@ export default function PaginaConsulta() {
           cargandoDepartamentos={departamentos.isPending}
           alAplicar={setFiltros}
         />
-        {departamentos.isError && <p className="mt-2 text-xs text-[#b42828]">No se pudo cargar la lista de departamentos.</p>}
+        {departamentos.isError && <p className="mt-2 text-xs text-peligro">No se pudo cargar la lista de departamentos.</p>}
       </Tarjeta>
 
       <ContenidoConsulta

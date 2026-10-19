@@ -36,7 +36,7 @@ function Actuador({ nombre, encendido, activa, animacion, icono }: { nombre: str
     <div className="flex flex-col items-center gap-2">
       <span
         className={`flex h-12 w-12 items-center justify-center rounded-lg border ${
-          encendido ? 'border-lateral bg-lateral text-white' : 'border-borde bg-fondo text-tinta-tenue'
+          encendido ? 'border-tinta bg-tinta text-superficie' : 'border-borde bg-fondo text-tinta-tenue'
         } ${encendido && activa ? animacion : ''}`}
         style={{ opacity: encendido && !activa ? 0.55 : 1 }}
         aria-hidden="true"
@@ -55,7 +55,7 @@ function Actuador({ nombre, encendido, activa, animacion, icono }: { nombre: str
 export function PanelSenales({ magnitud, activa }: Props) {
   const s = senalesPorMagnitud(magnitud);
   return (
-    <figure className="rounded-lg border border-borde bg-white p-4" aria-live="polite">
+    <figure className="rounded-xl border border-borde bg-superficie p-4" aria-live="polite">
       <div className="flex flex-wrap items-end justify-center gap-6">
         <Led color={COLORES_ESTADO.verde.relleno} encendido={s.verde} activa={activa} etiqueta="Verde" />
         <Led color={COLORES_ESTADO.amarillo.relleno} encendido={s.amarillo} activa={activa} etiqueta="Amarillo" />

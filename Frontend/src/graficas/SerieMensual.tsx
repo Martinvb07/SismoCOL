@@ -18,7 +18,7 @@ interface Props {
 
 const ALTO_POR_DEFECTO = 280;
 const ANCHO_MINIMO_ETIQUETA_MES = 56;
-const COLOR_BARRAS = '#9fcfda';
+const COLOR_BARRAS = 'var(--grafica-barras)';
 const COLOR_MEDIA = ESTILO_GRAFICA.colorSecundario;
 const COLOR_SEN = ESTILO_GRAFICA.colorAcento;
 const formatoConteo = format('~s');

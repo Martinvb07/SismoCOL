@@ -89,7 +89,7 @@ function MatrizConfusion({ reporte }: { reporte: ReporteEntrenamiento }) {
                   return (
                     <td
                       key={j}
-                      className={`h-12 w-20 border border-white text-center font-semibold tabular-nums ${i === j ? 'outline outline-1 outline-lateral' : ''}`}
+                      className={`h-12 w-20 border border-superficie text-center font-semibold tabular-nums ${i === j ? 'outline outline-1 outline-tinta' : ''}`}
                       style={{
                         backgroundColor: `rgba(31, 143, 166, ${intensidad})`,
                         color: intensidad > UMBRAL_TEXTO_CLARO ? '#fff' : '#1b2a30',
