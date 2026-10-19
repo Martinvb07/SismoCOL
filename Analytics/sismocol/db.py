@@ -19,7 +19,7 @@ from sismocol.ingest import ResultadoIngesta
 
 TABLAS = (
     "carga_datos", "registro_sismico", "afectacion", "usuario",
-    "configuracion_analisis", "analisis_zona", "advertencia_actividad",
+    "configuracion_analisis", "analisis_zona", "advertencia_actividad", "modelo_predictivo",
 )
 COLUMNAS_REGISTRO = [
     "id_evento_origen", "clave_origen", "fecha_hora", "latitud", "longitud",

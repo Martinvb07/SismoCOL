@@ -39,6 +39,10 @@ export async function llamarAnalytics<T>(
       const mensaje = datos?.error ?? (typeof datos?.detail === 'string' ? datos.detail : 'Solicitud rechazada');
       throw new ErrorHttp(respuesta.status, mensaje);
     }
+    // 503 con mensaje propio (p. ej. no hay modelo activo): también es para el usuario.
+    if (respuesta.status === 503 && typeof datos?.error === 'string') {
+      throw new ErrorHttp(503, datos.error);
+    }
     logger.error({ estado: respuesta.status, ruta, datos }, 'Error del servicio analítico');
     throw new ErrorHttp(502, 'El servicio analítico respondió con un error');
   }

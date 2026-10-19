@@ -16,7 +16,9 @@ from apscheduler.triggers.cron import CronTrigger
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
-from sismocol import analisis, db, servicio
+from pydantic import BaseModel, Field
+
+from sismocol import analisis, db, modelo, servicio
 from sismocol.config import Ajustes, ajustes
 from sismocol.ingest import FUENTES, ErrorIngesta
 
@@ -75,6 +77,16 @@ async def manejar_zona(_, error: analisis.ZonaNoEncontrada) -> JSONResponse:
 @app.exception_handler(analisis.SinDatos)
 async def manejar_sin_datos(_, error: analisis.SinDatos) -> JSONResponse:
     return JSONResponse(status_code=409, content={"error": str(error)})
+
+
+@app.exception_handler(modelo.DatosInsuficientes)
+async def manejar_datos_insuficientes(_, error: modelo.DatosInsuficientes) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"error": str(error)})
+
+
+@app.exception_handler(modelo.SinModeloActivo)
+async def manejar_sin_modelo(_, error: modelo.SinModeloActivo) -> JSONResponse:
+    return JSONResponse(status_code=503, content={"error": str(error)})
 
 
 @app.exception_handler(ErrorIngesta)
@@ -155,3 +167,22 @@ def advertencias(_: Protegido, cfg: Config, zona: str | None = None, nivel: str 
 def recalcular(_: Protegido, cfg: Config) -> dict[str, object]:
     iniciado = analisis.recalcular_en_segundo_plano(cfg.database_url)
     return {"iniciado": iniciado}
+
+
+# ─── Modelo de impacto (fase 5) ─────────────────────────────────────────────
+
+class EntradaPrediccion(BaseModel):
+    magnitud: float = Field(ge=2, le=9)
+    profundidad_km: float = Field(ge=0, le=700)
+    latitud: float = Field(ge=-4.3, le=13.5)
+    longitud: float = Field(ge=-82, le=-66.8)
+
+
+@app.post("/modelos/entrenar", status_code=201)
+def entrenar(_: Protegido, cfg: Config) -> dict[str, object]:
+    return modelo.entrenar(cfg.database_url)
+
+
+@app.post("/modelos/predecir")
+def predecir(_: Protegido, cfg: Config, entrada: EntradaPrediccion) -> dict[str, object]:
+    return modelo.predecir(cfg.database_url, entrada.magnitud, entrada.profundidad_km, entrada.latitud, entrada.longitud)

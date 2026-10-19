@@ -65,7 +65,7 @@ async function actividadReciente(): Promise<Actividad[]> {
     })),
     ...modelos.map((m) => ({
       tipo: 'ENTRENAMIENTO' as const,
-      descripcion: `Modelo v${m.version} (${m.algoritmo}) entrenado`,
+      descripcion: `Modelo ${m.version} (${m.algoritmo}) entrenado`,
       fecha: m.fechaEntrenamiento,
       usuario: null,
     })),

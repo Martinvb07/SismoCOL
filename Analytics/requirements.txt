@@ -5,6 +5,10 @@ scipy>=1.14,<2
 openpyxl>=3.1,<4
 tabulate>=0.9,<1
 
+# Modelo de impacto
+scikit-learn>=1.5,<2
+joblib>=1.4,<2
+
 # Servicio
 fastapi>=0.115,<1
 uvicorn[standard]>=0.30,<1
