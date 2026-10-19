@@ -31,7 +31,8 @@ SismoCOL/
 │   ├── sismocol/       Módulos de análisis
 │   └── eda/            Barrido de datos (CRISP-DM)
 ├── Firmware/esp32/     PlatformIO (Arduino)
-├── infra/              Mosquitto y Nginx de ejemplo
+├── infra/              Mosquitto y Nginx (infra/nginx/sismocol.conf)
+├── .github/workflows/  CI/CD: pruebas y deploy al VPS en cada push a main
 ├── docs/
 │   ├── crisp-dm/       Un documento por fase CRISP-DM
 │   └── decisiones.md   Decisiones técnicas
@@ -104,6 +105,10 @@ curl -H "Authorization: Bearer <token>" -F archivo=@data/raw/Sismos_Colombia_FIN
 ```
 
 Más detalles en [Analytics/README.md](Analytics/README.md) (pruebas, barrido de datos, vista previa de una carga).
+
+## Producción
+
+PM2 + Nginx en el VPS, con deploy automático desde GitHub Actions: ver [docs/despliegue-vps.md](docs/despliegue-vps.md).
 
 ## Metodología
 
