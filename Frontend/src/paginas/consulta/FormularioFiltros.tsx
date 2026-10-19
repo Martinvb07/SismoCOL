@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { FUENTES, type FiltrosSismos } from '@/api/tipos';
 import { Boton } from '@/componentes/ui/Basicos';
 import { numeroOpcional } from '@/lib/formularios';
-import { Campo, Entrada, Selector } from '@/componentes/ui/Formulario';
+import { Campo, Entrada, EntradaFecha, Selector } from '@/componentes/ui/Formulario';
 import { esquemaFiltros, LIMITES, type DatosFiltros } from '@/lib/esquemas';
 import { ETIQUETAS_FUENTE } from '@/lib/etiquetas';
 
@@ -43,7 +43,8 @@ export function FormularioFiltros({ departamentos, cargandoDepartamentos, alApli
 
   const aplicar = handleSubmit((datos) => alAplicar(aFiltros(datos)));
   const limpiar = () => {
-    reset(VALORES_INICIALES);
+    // Sin argumentos: vuelve a defaultValues y limpia también lo que muestran los controles (form.reset()).
+    reset();
     alAplicar(aFiltros(VALORES_INICIALES));
   };
   const numero = { setValueAs: numeroOpcional };
@@ -53,10 +54,10 @@ export function FormularioFiltros({ departamentos, cargandoDepartamentos, alApli
     <form onSubmit={(e) => void aplicar(e)} noValidate aria-label="Filtros de sismos">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <Campo etiqueta="Desde" error={errors.desde?.message}>
-          {(p) => <Entrada {...p} type="date" {...register('desde', texto)} />}
+          {(p) => <EntradaFecha {...p} {...register('desde', texto)} />}
         </Campo>
         <Campo etiqueta="Hasta" error={errors.hasta?.message}>
-          {(p) => <Entrada {...p} type="date" {...register('hasta', texto)} />}
+          {(p) => <EntradaFecha {...p} {...register('hasta', texto)} />}
         </Campo>
         <Campo etiqueta="Departamento">
           {(p) => (

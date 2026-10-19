@@ -1,4 +1,4 @@
-import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react';
 
 export const CLASES_CONTROL =
   'block w-full rounded-xl border border-borde bg-superficie px-3 py-2.5 text-sm text-tinta transition-[border-color,box-shadow] duration-200 placeholder:text-tinta-tenue hover:border-tinta-tenue/50 focus:border-primario focus:outline-none focus:ring-4 focus:ring-primario/15 disabled:bg-superficie-2 aria-[invalid=true]:border-peligro';
@@ -44,13 +44,5 @@ export const Entrada = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInpu
   return <input ref={ref} className={`${CLASES_CONTROL} ${className}`} {...props} />;
 });
 
-export const Selector = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(function Selector(
-  { className = '', children, ...props },
-  ref,
-) {
-  return (
-    <select ref={ref} className={`${CLASES_CONTROL} ${className}`} {...props}>
-      {children}
-    </select>
-  );
-});
+// Selector y fecha con estilo propio (envuelven el control nativo).
+export { EntradaFecha, Selector } from './Selectores';

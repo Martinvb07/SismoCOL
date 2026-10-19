@@ -213,7 +213,7 @@
     transform: scale(1.12);
   }
   .lateral-etiqueta {
-    @apply min-w-0 flex-1 truncate;
+    @apply min-w-0 flex-1 truncate text-left;
   }
   /* Un solo resaltado que se desliza hasta la sección activa */
   .lateral-pildora {
@@ -336,6 +336,11 @@
   .pagina-entrada > *:nth-child(3) { animation-delay: .12s; }
   .pagina-entrada > *:nth-child(4) { animation-delay: .18s; }
   .pagina-entrada > *:nth-child(n + 5) { animation-delay: .24s; }
+  /* Cada tarjeta animada es su propia capa: la que tiene una lista o calendario abierto va encima. */
+  .pagina-entrada > *:focus-within {
+    position: relative;
+    z-index: 20;
+  }
 
   .tarjeta {
     @apply rounded-2xl border border-borde bg-superficie p-4 shadow-tarjeta sm:p-6;
@@ -414,6 +419,23 @@
     animation: trazar 7s linear infinite;
   }
 }
+
+@keyframes menu-entrada {
+  from { opacity: 0; transform: translateY(-6px) scale(.97); }
+}
+@keyframes opcion-entrada {
+  from { opacity: 0; transform: translateX(-6px); }
+}
+@keyframes mes-derecha {
+  from { opacity: 0; transform: translateX(24px); }
+}
+@keyframes mes-izquierda {
+  from { opacity: 0; transform: translateX(-24px); }
+}
+.menu-entrada { animation: menu-entrada .2s cubic-bezier(.2, .7, .2, 1) both; }
+.opcion-entrada { animation: opcion-entrada .25s ease both; }
+.mes-desde-derecha { animation: mes-derecha .28s cubic-bezier(.2, .7, .2, 1) both; }
+.mes-desde-izquierda { animation: mes-izquierda .28s cubic-bezier(.2, .7, .2, 1) both; }
 
 @keyframes entrada {
   from { opacity: 0; transform: translateY(10px); }
