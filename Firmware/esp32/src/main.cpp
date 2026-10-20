@@ -8,16 +8,20 @@
  *   M ≥ 6 · motorreductor de ida y vuelta, más rápido cuanto mayor la magnitud
  * Los LEDs y el buzzer son opcionales: verde siempre · amarillo si M ≥ 4,0 ·
  * rojo y buzzer si M ≥ 6,0.
+ * Además crea su propia red (SISMO_ESP32) con un panel en http://192.168.4.1
+ * para lanzar sismos sin internet; el panel también muestra los que llegan de la web.
  * Cada 10 s publica un latido en sismos/latido. Si se cae, el broker publica
  * su último deseo (LWT) { conectado: false } y la API lo marca desconectado.
  */
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
+#include <WebServer.h>
 #include <WiFi.h>
 
+#include "secrets.h"  // antes que config.h, que usa AP_SSID/AP_CLAVE si están
 #include "config.h"
-#include "secrets.h"
+#include "panel.h"
 
 // Canales LEDC en temporizadores distintos: el buzzer cambia de frecuencia y los motores no.
 static const int CANAL_BUZZER = 0;
@@ -29,6 +33,7 @@ static const unsigned long PERIODO_PULSO_MS = 250;
 
 WiFiClient red;
 PubSubClient mqtt(red);
+WebServer servidor(80);
 char idCliente[32];
 char latidoDesconexion[96];
 
@@ -36,6 +41,8 @@ enum Fase { AVANCE, PAUSA_AVANCE, RETROCESO, PAUSA_RETROCESO };
 
 struct Senal {
   bool activa = false;
+  float magnitud = 0;
+  const char* origen = "-";
   unsigned long inicio = 0;
   unsigned long duracion = 0;
   bool amarillo = false;
@@ -50,6 +57,8 @@ struct Senal {
 
 unsigned long ultimoLatido = 0;
 unsigned long ultimoIntentoMqtt = 0;
+unsigned long ultimoIntentoWifi = 0;
+bool wifiConectado = false;
 
 /** Interpola v de [a, b] a [desde, hasta], recortando fuera del rango. */
 float interpolar(float v, float a, float b, float desde, float hasta) {
@@ -79,9 +88,11 @@ void apagarSenales() {
   motorLineal(0, 0);
 }
 
-void iniciarSenal(float magnitud, unsigned long duracionMs) {
+void iniciarSenal(float magnitud, unsigned long duracionMs, const char* origen) {
   apagarSenales();
   senal.activa = true;
+  senal.magnitud = magnitud;
+  senal.origen = origen;
   senal.inicio = millis();
   senal.duracion = duracionMs;
   senal.amarillo = magnitud >= UMBRAL_AMARILLO;
@@ -129,14 +140,18 @@ void actualizarMovimiento(unsigned long ahora) {
   senal.inicioFase = ahora;
 }
 
+void detenerSenal() {
+  senal.activa = false;
+  apagarSenales();
+}
+
 /** Motores y buzzer, sin bloquear el loop (el MQTT sigue atendiendo). */
 void actualizarSenal() {
   if (!senal.activa) return;
   unsigned long ahora = millis();
   unsigned long transcurrido = ahora - senal.inicio;
   if (transcurrido >= senal.duracion) {
-    senal.activa = false;
-    apagarSenales();
+    detenerSenal();
     Serial.println("Simulación terminada");
     return;
   }
@@ -176,26 +191,72 @@ void alRecibir(char* topico, byte* carga, unsigned int largo) {
   mqtt.publish(TOPICO_ESTADO, respuesta);
 
   Serial.printf("Simulación %ld: M %.1f durante %lu ms\n", idSimulacion, magnitud, duracion);
-  iniciarSenal(magnitud, duracion);
+  iniciarSenal(magnitud, duracion, "web");
 }
 
-void conectarWifi() {
-  if (WiFi.status() == WL_CONNECTED) return;
-  Serial.printf("Conectando a Wi-Fi «%s»", WIFI_SSID);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_CLAVE);
-  while (WiFi.status() != WL_CONNECTED) {
-    // Verde parpadeando mientras no hay red
-    digitalWrite(PIN_LED_VERDE, !digitalRead(PIN_LED_VERDE));
-    delay(300);
-    Serial.print(".");
+/** Reintenta la red con internet sin bloquear: el panel local sigue respondiendo sin ella. */
+void vigilarWifi() {
+  bool conectado = WiFi.status() == WL_CONNECTED;
+  if (conectado != wifiConectado) {
+    wifiConectado = conectado;
+    if (conectado) Serial.printf("Wi-Fi «%s» listo: %s\n", WIFI_SSID, WiFi.localIP().toString().c_str());
+    else Serial.printf("Sin Wi-Fi «%s», reintentando…\n", WIFI_SSID);
   }
-  digitalWrite(PIN_LED_VERDE, LOW);
-  Serial.printf("\nWi-Fi listo: %s\n", WiFi.localIP().toString().c_str());
+  if (conectado) return;
+  // Verde parpadeando mientras no hay internet (salvo durante un sismo)
+  if (!senal.activa) digitalWrite(PIN_LED_VERDE, (millis() / 300) % 2);
+  if (millis() - ultimoIntentoWifi >= REINTENTO_WIFI_MS) {
+    ultimoIntentoWifi = millis();
+    WiFi.disconnect();
+    WiFi.begin(WIFI_SSID, WIFI_CLAVE);
+  }
+}
+
+// ---------- Panel local ----------
+
+void panelIniciar() {
+  float mag = servidor.arg("mag").toFloat();
+  if (mag < MAG_MINIMA || mag > MAG_MAXIMA) {
+    servidor.send(400, "application/json", "{\"mensaje\":\"La magnitud debe estar entre 2 y 8\"}");
+    return;
+  }
+  Serial.printf("Panel local: M %.1f durante %d ms\n", mag, DURACION_PANEL_MS);
+  iniciarSenal(mag, DURACION_PANEL_MS, "panel local");
+  servidor.send(200, "application/json", "{\"mensaje\":\"Sismo iniciado\"}");
+}
+
+void panelDetener() {
+  detenerSenal();
+  Serial.println("Panel local: detenido");
+  servidor.send(200, "application/json", "{\"mensaje\":\"Motores detenidos\"}");
+}
+
+void panelEstado() {
+  const char* estado = "Motores detenidos";
+  const char* fase = "Detenido";
+  if (senal.activa && !senal.lineal) {
+    estado = "Vibrador activo";
+    fase = "Sin movimiento lineal";
+  } else if (senal.activa) {
+    estado = "Movimiento lineal activo";
+    const char* fases[] = {"Avanzando", "Pausa al avanzar", "Retrocediendo", "Pausa al regresar"};
+    fase = fases[senal.fase];
+  }
+  JsonDocument doc;
+  doc["magnitud"] = senal.activa ? senal.magnitud : 0;
+  doc["estado"] = estado;
+  doc["fase"] = fase;
+  doc["origen"] = senal.origen;
+  doc["restanteMs"] = senal.activa ? senal.duracion - (millis() - senal.inicio) : 0;
+  doc["wifi"] = wifiConectado;
+  doc["mqtt"] = mqtt.connected();
+  String json;
+  serializeJson(doc, json);
+  servidor.send(200, "application/json", json);
 }
 
 void conectarMqtt() {
-  if (mqtt.connected() || millis() - ultimoIntentoMqtt < REINTENTO_MQTT_MS) return;
+  if (!wifiConectado || mqtt.connected() || millis() - ultimoIntentoMqtt < REINTENTO_MQTT_MS) return;
   ultimoIntentoMqtt = millis();
   Serial.print("Conectando a MQTT… ");
   bool ok = mqtt.connect(idCliente, MQTT_USUARIO, MQTT_CLAVE, TOPICO_LATIDO, 1, false, latidoDesconexion);
@@ -229,14 +290,32 @@ void setup() {
   snprintf(idCliente, sizeof(idCliente), "sismocol-esp32-%06llx", (unsigned long long)(ESP.getEfuseMac() & 0xFFFFFF));
   snprintf(latidoDesconexion, sizeof(latidoDesconexion), "{\"topico\":\"%s\",\"conectado\":false}", TOPICO_SIMULACION);
 
-  conectarWifi();
+  // Red propia (panel local) y red con internet (web SismoCol) al mismo tiempo
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.setAutoReconnect(true);
+  if (WiFi.softAP(AP_SSID, AP_CLAVE)) {
+    Serial.printf("Red propia «%s»: panel en http://%s\n", AP_SSID, WiFi.softAPIP().toString().c_str());
+  } else {
+    Serial.println("Error al crear la red propia");
+  }
+  WiFi.begin(WIFI_SSID, WIFI_CLAVE);
+  ultimoIntentoWifi = millis();
+  Serial.printf("Conectando a Wi-Fi «%s»…\n", WIFI_SSID);
+
+  servidor.on("/", HTTP_GET, []() { servidor.send_P(200, "text/html", PANEL_HTML); });
+  servidor.on("/iniciar", HTTP_GET, panelIniciar);
+  servidor.on("/detener", HTTP_GET, panelDetener);
+  servidor.on("/estado", HTTP_GET, panelEstado);
+  servidor.begin();
+
   mqtt.setServer(MQTT_HOST, MQTT_PUERTO);
   mqtt.setCallback(alRecibir);
   mqtt.setKeepAlive(15);
 }
 
 void loop() {
-  conectarWifi();
+  servidor.handleClient();
+  vigilarWifi();
   conectarMqtt();
   mqtt.loop();
   actualizarSenal();

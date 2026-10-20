@@ -38,5 +38,16 @@
 #define PAUSA_MS_MIN_MAG 180  // pausa al cambiar de sentido en M 6
 #define PAUSA_MS_MAX_MAG 30   // … y en M 8
 
+// Red propia del ESP32 para el panel local (http://192.168.4.1). Se puede
+// cambiar definiendo AP_SSID y AP_CLAVE en secrets.h.
+#ifndef AP_SSID
+#define AP_SSID "SISMO_ESP32"
+#endif
+#ifndef AP_CLAVE
+#define AP_CLAVE "Sismo2026"  // mínimo 8 caracteres
+#endif
+#define DURACION_PANEL_MS 5000  // duración de un sismo lanzado desde el panel local
+
 #define INTERVALO_LATIDO_MS 10000
 #define REINTENTO_MQTT_MS 5000
+#define REINTENTO_WIFI_MS 15000

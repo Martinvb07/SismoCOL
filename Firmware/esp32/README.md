@@ -28,6 +28,17 @@ Si un motor no arranca con magnitudes bajas, subir `PWM_VIBRADOR_MIN` o `PWM_LIN
 
 Los LEDs y el buzzer, si están, siguen las reglas de la pantalla de simulación: verde siempre, amarillo si M ≥ 4,0, rojo y buzzer en pulsos si M ≥ 6,0. Mientras busca Wi-Fi, el LED verde parpadea.
 
+## Wi-Fi: dos redes a la vez
+
+El ESP32 usa dos redes al mismo tiempo:
+
+| Red | Para qué | Cómo se configura |
+|---|---|---|
+| **Red con internet** (hotspot del celular o Wi-Fi del lugar, 2,4 GHz) | recibir las simulaciones enviadas desde la web de SismoCol | `WIFI_SSID` y `WIFI_CLAVE` en `include/secrets.h` |
+| **Red propia `SISMO_ESP32`** (clave `Sismo2026`) | panel local en **http://192.168.4.1**, de respaldo cuando no hay internet | ya viene configurada; se cambia con `AP_SSID` y `AP_CLAVE` en `include/secrets.h` |
+
+La red propia la crea el ESP32 y no tiene internet: desde ella no se llega a la web de SismoCol, solo al panel local. Si no hay internet, el panel sigue funcionando y el ESP32 reintenta la conexión cada 15 s. El panel muestra el estado de los motores, de dónde vino el sismo (web o panel local) y si hay conexión con la web.
+
 ## Protocolo MQTT
 
 | Tópico | Dirección | Mensaje |
@@ -46,7 +57,7 @@ La API marca el dispositivo **en línea** con cada latido y **desconectado** con
    - `WIFI_SSID` y `WIFI_CLAVE`: una red con internet a la que se conecta el ESP32 (2,4 GHz; sirve el punto de acceso del celular).
    - `MQTT_HOST`: `sismocol.trabajosucc.site` o la IP del VPS.
    - `MQTT_USUARIO` y `MQTT_CLAVE`: el usuario `sismocol-esp32` creado en Mosquitto (ver `docs/despliegue-vps.md`).
-3. Conectar el ESP32 por USB y ejecutar:
+3. Conectar el ESP32 por USB (solo para cargar el firmware; después funciona por Wi-Fi con cualquier fuente) y ejecutar:
    ```bash
    cd Firmware/esp32
    pio run -t upload
