@@ -169,8 +169,8 @@ Los LEDs se derivan de la magnitud y son iguales en el frontend y en el firmware
 - verde: siempre;
 - amarillo: M ≥ 4,0;
 - rojo: M ≥ 6,0;
-- vibración: M ≥ 4,0;
 - buzzer: M ≥ 6,0;
+- maqueta: motor vibrador si M < 6,0 y movimiento de ida y vuelta si M ≥ 6,0 (`Firmware/esp32/README.md`);
 - duración: 5 s.
 
 ## Administración
