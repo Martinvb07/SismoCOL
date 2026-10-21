@@ -137,12 +137,6 @@ El ESP32 usa `MQTT_HOST "sismocol.trabajosucc.site"`, el usuario `sismocol-esp32
 
 Sin Mosquitto la API funciona igual: las simulaciones quedan **FALLIDA** y el dispositivo aparece desconectado.
 
-## Pendiente: prototipo ESP32
+## Prototipo ESP32
 
-El servidor ya está listo para la simulación: Mosquitto corre en el VPS con usuarios y ACL, el puerto 1883/TCP está abierto en `ufw` y la API muestra `MQTT conectado`. Falta lo que depende del prototipo físico:
-
-- [ ] Conectar el L298N de la maqueta (y, si se quiere, LEDs y buzzer), según `Firmware/esp32/README.md`.
-- [ ] Crear `Firmware/esp32/include/secrets.h` con la red Wi-Fi (2,4 GHz) y el usuario `sismocol-esp32`.
-- [ ] Compilar y cargar el firmware: `pio run -t upload`, y revisar con `pio device monitor`.
-- [ ] Probar la conexión desde otra red. Si no conecta, abrir el 1883/TCP en el firewall del panel de Hostinger.
-- [ ] Enviar una simulación desde la web y confirmar que queda **ENVIADA** y que la maqueta se mueve.
+Probado de punta a punta: Mosquitto corre en el VPS con usuarios y ACL, el ESP32 se conecta con el usuario `sismocol-esp32` y las simulaciones enviadas desde la web quedan **ENVIADA** y mueven la maqueta. La conexión, la carga del firmware y el panel local están en `Firmware/esp32/README.md`.
