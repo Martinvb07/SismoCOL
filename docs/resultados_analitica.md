@@ -1,6 +1,6 @@
 # Resultados de la analítica de SismoCol
 
-Generado automáticamente el 2026-11-10 13:04 UTC con `python -m eda.resultados_analitica` a partir de la base de datos. No editar a mano: regenerar después de recalcular. Las técnicas, supuestos y limitaciones están en [decisiones.md](decisiones.md) (D14 a D18).
+Generado automáticamente el 2026-11-10 21:27 UTC con `python -m eda.resultados_analitica` a partir de la base de datos. No editar a mano: regenerar después de recalcular. Las técnicas, supuestos y limitaciones están en [decisiones.md](decisiones.md) (D14 a D21).
 
 > Todos los resultados son estimaciones estadísticas validadas con datos pasados. SismoCol no predice la fecha, el lugar ni la magnitud de un sismo.
 

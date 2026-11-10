@@ -124,10 +124,12 @@ def seccion_pronostico(url: str) -> str:
     for (zona, ganador, meses), fila in pivote.iterrows():
         cuerpo.append([zona, str(meses), *[n(fila[("mae", m)]) for m in ETIQUETA_MODELO],
                        *[n(fila[("mape", m)], 1) for m in ETIQUETA_MODELO], ETIQUETA_MODELO[ganador]])
-    victorias = df.drop_duplicates("zona").modelo_ganador.value_counts()
-    media = df.groupby("modelo").mae.mean()
+    zonas = df[df.zona != pronostico.ZONA_NACIONAL]
+    victorias = zonas.drop_duplicates("zona").modelo_ganador.value_counts()
+    media = zonas.groupby("modelo").mae.mean()
     texto = ("## 3. Pronóstico de actividad mensual por zona: backtesting (D16)\n\n"
-             "Origen móvil desde el mes 24, pronosticando t+1..t+3. MAE en sismos/mes; MAPE en %, sin los meses con 0 eventos.\n\n"
+             "Origen móvil desde el mes 24, pronosticando t+1..t+3. MAE en sismos/mes; MAPE en %, sin los meses con 0 eventos. "
+             "La fila «Colombia» es la serie de todo el catálogo SGC (D21) y no entra en el conteo de zonas ganadas.\n\n"
              + tabla(["Zona", "Meses", *[f"MAE {e}" for e in ETIQUETA_MODELO.values()],
                       *[f"MAPE {e}" for e in ETIQUETA_MODELO.values()], "Elegido"], cuerpo)
              + "\n\nZonas ganadas por cada modelo: "
@@ -244,7 +246,7 @@ def generar(url: str) -> str:
         "# Resultados de la analítica de SismoCol\n\n"
         f"Generado automáticamente el {ahora} con `python -m eda.resultados_analitica` a partir de la base de datos. "
         "No editar a mano: regenerar después de recalcular. Las técnicas, supuestos y limitaciones están en "
-        "[decisiones.md](decisiones.md) (D14 a D18).\n\n"
+        "[decisiones.md](decisiones.md) (D14 a D21).\n\n"
         "> Todos los resultados son estimaciones estadísticas validadas con datos pasados. SismoCol no predice la fecha, "
         "el lugar ni la magnitud de un sismo.\n"
         + _aviso_fuentes(url)
