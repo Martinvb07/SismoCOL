@@ -31,6 +31,7 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 from sqlalchemy import insert, select
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 from sismocol import analisis, db, sismologia
 
@@ -72,8 +73,6 @@ class Pronostico:
 
 
 def _sarimax(y: np.ndarray, orden: tuple, estacional: tuple):
-    from statsmodels.tsa.statespace.sarimax import SARIMAX
-
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         modelo = SARIMAX(np.log1p(y), order=orden, seasonal_order=estacional,
@@ -91,7 +90,7 @@ def elegir_orden(y: np.ndarray) -> tuple[tuple, tuple, float]:
                 continue
             try:
                 ajuste = _sarimax(y, orden, estacional)
-            except Exception:
+            except (ValueError, np.linalg.LinAlgError):
                 continue
             if np.isfinite(ajuste.aic) and (mejor is None or ajuste.aic < mejor[2]):
                 mejor = (orden, estacional, float(ajuste.aic))
@@ -145,7 +144,7 @@ def backtesting(y: np.ndarray, orden: tuple, estacional: tuple,
         entrenamiento = y[:t]
         try:
             sarima = pronostico_sarima(entrenamiento, reales.size, orden, estacional).media
-        except Exception:
+        except (ValueError, np.linalg.LinAlgError):
             sarima = np.full(reales.size, np.nan)
         for modelo, prediccion in (("SARIMA", sarima),
                                    ("INGENUO", pronostico_base("INGENUO", entrenamiento, reales.size)),
@@ -198,7 +197,7 @@ def pronosticar_serie(zona: str, mc: float, serie: pd.Series) -> ResultadoZona:
     pronosticos: dict[str, Pronostico] = {}
     try:
         pronosticos["SARIMA"] = pronostico_sarima(y, HORIZONTE_MESES, orden, estacional)
-    except Exception:
+    except (ValueError, np.linalg.LinAlgError):
         log.warning("SARIMA no converge con toda la serie de %s", zona)
         if ganador == "SARIMA":
             ganador = min((m for m in candidatos if m != "SARIMA"), key=candidatos.get)

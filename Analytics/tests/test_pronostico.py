@@ -35,6 +35,9 @@ def test_pronostico_con_estacionalidad_y_bandas_ordenadas():
     serie = pd.Series(rng.poisson(nivel).astype(float), index=meses)
     r = pronosticar_serie("Prueba", 2.0, serie)
     assert r.ganador in {"SARIMA", "INGENUO", "MEDIA_MOVIL_12"}
+    # SARIMA tiene que haberse evaluado de verdad (no puede quedar fuera en silencio).
+    assert r.evaluacion["SARIMA"]["n"] == r.evaluacion["INGENUO"]["n"] > 0
+    assert "SARIMA" in r.pronosticos
     assert r.evaluacion[r.ganador]["mae"] == min(e["mae"] for e in r.evaluacion.values() if e["mae"] is not None)
     for p in r.pronosticos.values():
         assert p.media.size == HORIZONTE_MESES
