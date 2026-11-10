@@ -3,7 +3,7 @@ import type { Axis } from 'd3-axis';
 import { format } from 'd3-format';
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { line } from 'd3-shape';
-import { useCallback } from 'react';
+import { useCallback, type CSSProperties } from 'react';
 import type { MannKendall, PuntoSerieMensual } from '@/api/tipos';
 import { ETIQUETAS_TENDENCIA, valorSen } from '@/lib/analisis';
 import { formatearEntero, formatearMes, formatearNumero, formatearPValor } from '@/lib/formato';
@@ -132,6 +132,8 @@ export function SerieMensual({ serie, mannKendall, alto = ALTO_POR_DEFECTO }: Pr
                       height={altoBarra}
                       rx={Math.min(ESTILO_GRAFICA.radioBarra, x.bandwidth() / 2)}
                       fill={COLOR_BARRAS}
+                      className="barra-crece"
+                      style={{ '--i': i } as CSSProperties}
                       opacity={tooltip && tooltip.dato.indice !== i ? 0.6 : 1}
                     />
                     <rect
@@ -152,6 +154,7 @@ export function SerieMensual({ serie, mannKendall, alto = ALTO_POR_DEFECTO }: Pr
                 stroke={COLOR_MEDIA}
                 strokeWidth={ESTILO_GRAFICA.grosorLinea}
                 pointerEvents="none"
+                className="trazo-aparece"
               />
               {primero && final && (
                 <line
@@ -163,6 +166,7 @@ export function SerieMensual({ serie, mannKendall, alto = ALTO_POR_DEFECTO }: Pr
                   strokeWidth={ESTILO_GRAFICA.grosorLinea}
                   strokeDasharray="6 4"
                   pointerEvents="none"
+                  className="trazo-aparece"
                 />
               )}
             </>

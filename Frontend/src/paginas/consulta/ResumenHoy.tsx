@@ -1,8 +1,8 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import type { ComponentType, CSSProperties, ReactNode, SVGProps } from 'react';
 import { Link } from 'react-router-dom';
 import { apiAmenaza, apiAnalisis, apiReplicas, claves } from '@/api/endpoints';
-import { Giro } from '@/componentes/ui/Basicos';
+import { IconoAlerta, IconoAmenaza, IconoPronostico, IconoReplicas } from '@/componentes/ui/Iconos';
 import { RUTAS } from '@/componentes/layout/navegacion';
 import { formatearFechaLarga, formatearMagnitud, formatearNumero } from '@/lib/formato';
 import { rutaReplicas } from '@/lib/replicas';
@@ -12,6 +12,11 @@ import { mesLargo, porcentajeSimple, unirLista, zonasMasAmenazadas } from '@/lib
 const ZONA_NACIONAL = 'Colombia';
 
 interface PropsTarjeta<T> {
+  /** Posición (para la entrada en cascada). */
+  indice: number;
+  icono: ComponentType<SVGProps<SVGSVGElement>>;
+  /** Color de acento de la tarjeta. */
+  acento: string;
   titulo: string;
   enlace: string;
   textoEnlace: string;
@@ -20,29 +25,39 @@ interface PropsTarjeta<T> {
   children: (datos: T) => { valor: ReactNode; texto: ReactNode } | null;
 }
 
-function TarjetaHoy<T>({ titulo, enlace, textoEnlace, consulta, sinDatos, children }: PropsTarjeta<T>) {
+function TarjetaHoy<T>({ indice, icono: Icono, acento, titulo, enlace, textoEnlace, consulta, sinDatos, children }: PropsTarjeta<T>) {
   const contenido = consulta.data !== undefined ? children(consulta.data) : null;
   return (
     <Link
       to={enlace}
-      className="group flex h-full flex-col justify-between gap-2 rounded-2xl border border-borde bg-superficie px-4 py-3 shadow-sm transition-colors hover:border-primario focus:outline-none focus-visible:ring-2 focus-visible:ring-primario"
+      className="tarjeta-hoy group focus:outline-none focus-visible:ring-2 focus-visible:ring-primario"
+      style={{ '--i': indice, '--acento': acento } as CSSProperties}
     >
       <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-tinta-tenue">{titulo}</h3>
+        <div className="flex items-center gap-3">
+          <span className="tarjeta-hoy-icono" aria-hidden="true">
+            <Icono className="h-5 w-5" />
+          </span>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-tinta-tenue">{titulo}</h3>
+        </div>
         {consulta.isPending ? (
-          <p className="mt-2 flex items-center gap-2 text-sm text-tinta-tenue">
-            <Giro /> Cargando…
-          </p>
+          <div className="mt-3 space-y-2" role="status" aria-label="Cargando">
+            <div className="esqueleto h-7 w-1/2" />
+            <div className="esqueleto h-3 w-full" />
+            <div className="esqueleto h-3 w-4/5" />
+          </div>
         ) : contenido ? (
           <>
-            <p className="mt-1 text-2xl font-bold text-tinta">{contenido.valor}</p>
-            <p className="mt-1 text-sm text-tinta-secundaria">{contenido.texto}</p>
+            <p className="mt-3 text-2xl font-extrabold tracking-tight text-tinta">{contenido.valor}</p>
+            <p className="mt-1 text-sm leading-relaxed text-tinta-secundaria">{contenido.texto}</p>
           </>
         ) : (
-          <p className="mt-2 text-sm text-tinta-tenue">{sinDatos}</p>
+          <p className="mt-3 text-sm text-tinta-tenue">{sinDatos}</p>
         )}
       </div>
-      <span className="text-sm font-semibold text-primario group-hover:underline">{textoEnlace} →</span>
+      <span className="text-sm font-semibold text-primario">
+        {textoEnlace} <span className="tarjeta-hoy-flecha inline-block">→</span>
+      </span>
     </Link>
   );
 }
@@ -61,6 +76,9 @@ export function ResumenHoy() {
       </h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <TarjetaHoy
+          indice={0}
+          icono={IconoAlerta}
+          acento="#e2b007"
           titulo="Zonas con más sismos de lo normal"
           enlace={RUTAS.analisis}
           textoEnlace="Ver advertencias"
@@ -80,6 +98,9 @@ export function ResumenHoy() {
         </TarjetaHoy>
 
         <TarjetaHoy
+          indice={1}
+          icono={IconoReplicas}
+          acento="#d23c3c"
           titulo="Último sismo fuerte"
           enlace={principales.data?.[0] ? rutaReplicas(principales.data[0].idSismo) : RUTAS.replicas}
           textoEnlace="Ver sus réplicas"
@@ -98,6 +119,9 @@ export function ResumenHoy() {
         </TarjetaHoy>
 
         <TarjetaHoy
+          indice={2}
+          icono={IconoAmenaza}
+          acento="#e7792b"
           titulo="Zona con más probabilidad de un sismo fuerte"
           enlace={`${RUTAS.analisis}?pestana=amenaza`}
           textoEnlace="Ver amenaza"
@@ -115,6 +139,9 @@ export function ResumenHoy() {
         </TarjetaHoy>
 
         <TarjetaHoy
+          indice={3}
+          icono={IconoPronostico}
+          acento="rgb(var(--c-primario))"
           titulo="Sismos esperados en todo el país"
           enlace={`${RUTAS.analisis}?pestana=pronostico`}
           textoEnlace="Ver pronóstico"

@@ -1,6 +1,7 @@
 import { geoMercator, geoPath } from 'd3-geo';
 import { scaleLinear } from 'd3-scale';
 import type { Feature, Geometry } from 'geojson';
+import type { CSSProperties } from 'react';
 import type { MunicipioEscenario } from '@/api/tipos';
 import { NIVELES_IMPACTO } from '@/api/tipos';
 import { EstadoCargando, EstadoError } from '@/componentes/ui/Estados';
@@ -58,7 +59,7 @@ export function MapaEscenario({ municipios, epicentro, alto = ALTO_POR_DEFECTO }
                   <path key={f.properties.codigo} d={camino(f) ?? undefined} fill="var(--mapa-relleno)" stroke="var(--mapa-borde)" strokeWidth={0.75} />
                 ))}
               </g>
-              {ordenados.map((m) => {
+              {ordenados.map((m, i) => {
                 const pos = proyeccion([m.longitud, m.latitud]);
                 if (!pos) return null;
                 return (
@@ -71,6 +72,8 @@ export function MapaEscenario({ municipios, epicentro, alto = ALTO_POR_DEFECTO }
                     fillOpacity={0.85}
                     stroke="#fff"
                     strokeWidth={0.5}
+                    className="punto-aparece"
+                    style={{ '--i': i } as CSSProperties}
                     onMouseMove={(e) => mostrar(e, m)}
                     onMouseLeave={ocultar}
                   />

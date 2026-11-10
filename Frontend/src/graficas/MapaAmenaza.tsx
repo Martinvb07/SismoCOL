@@ -68,7 +68,7 @@ export function MapaAmenaza({ celdas, tamanoCelda, magnitud, anios, alto = ALTO_
                   <rect x={0} y={0} width={ancho} height={alto} />
                 </clipPath>
               </defs>
-              <g clipPath={`url(#${idRecorte})`}>
+              <g clipPath={`url(#${idRecorte})`} className="capa-aparece">
                 {celdas.map((c) => {
                   const a = proyeccion([c.longitud - medio, c.latitud + medio]);
                   const b = proyeccion([c.longitud + medio, c.latitud - medio]);

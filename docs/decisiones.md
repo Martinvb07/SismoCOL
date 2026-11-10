@@ -182,3 +182,9 @@ Cada vista de analítica (Réplicas, Análisis y sus pestañas de pronóstico y 
 Cambia D20: el pronóstico al vuelo ya no exige M ≥ 4. Cualquier sismo del SGC o de USGS con magnitud se puede consultar; el mínimo queda configurable con `REPLICAS_MAGNITUD_MIN_CONSULTA` (por defecto 0).
 - Para los sismos de magnitud menor que 4 el cálculo cae casi siempre en el genérico y da probabilidades muy bajas (un M 3 tiene cerca de 1,4 % de probabilidad de una réplica de magnitud 4 o más en 7 días). La respuesta lo dice en texto simple: «Este sismo es pequeño: los sismos de esta magnitud casi nunca producen réplicas que se sientan».
 - La vista de réplicas empieza con «Elige un sismo»: los sismos fuertes destacados y debajo el listado paginado de **todos** los sismos, con filtros opcionales. Al elegir uno, la página baja hasta su pronóstico.
+
+## D23 — Pulido visual y animaciones (2026-11-10)
+- **Colores de estado según el tema:** el fondo, el texto y el borde de los niveles (verde, amarillo, naranja, rojo, neutro) salen de variables CSS (`--estado-*` en `Frontend/src/index.css`) con versión clara y oscura. El relleno de las marcas en gráficas y mapas sigue fijo.
+- **Animaciones:** las líneas de las gráficas se dibujan, las barras crecen, las bandas y los mapas aparecen gradualmente y los puntos del simulador brotan en cascada. Las pestañas tienen subrayado animado, el detalle técnico se despliega, la luz activa del semáforo late y las tarjetas del panel entran en cascada y se elevan al pasar el puntero. Todo respeta `prefers-reduced-motion`.
+- **Carga:** esqueletos con brillo en lugar de solo el indicador giratorio.
+- **Celular:** el listado de sismos de la vista de réplicas se muestra como tarjetas que se tocan completas, porque la tabla dejaba el botón fuera de la pantalla.

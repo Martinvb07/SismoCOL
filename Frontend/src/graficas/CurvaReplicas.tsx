@@ -100,9 +100,9 @@ export function CurvaReplicas({ curva, diasAjuste, mc, alto = ALTO_POR_DEFECTO }
               <text x={(m.izquierda + ancho - m.derecha) / 2} y={alto - 6} textAnchor="middle" fontSize={ESTILO_GRAFICA.tamanoTexto} fill={ESTILO_GRAFICA.colorEje}>
                 Tiempo desde el sismo (h = horas, d = días)
               </text>
-              <path d={banda(curva) ?? undefined} fill={COLOR_BANDA} opacity={0.45} pointerEvents="none" />
-              <path d={esperado(curva) ?? undefined} fill="none" stroke={COLOR_ESPERADO} strokeWidth={ESTILO_GRAFICA.grosorLinea} strokeDasharray="6 4" pointerEvents="none" />
-              <path d={observado(curva) ?? undefined} fill="none" stroke={COLOR_OBSERVADO} strokeWidth={ESTILO_GRAFICA.grosorLinea} pointerEvents="none" />
+              <path d={banda(curva) ?? undefined} fill={COLOR_BANDA} opacity={0.45} pointerEvents="none" className="banda-aparece" />
+              <path d={esperado(curva) ?? undefined} fill="none" stroke={COLOR_ESPERADO} strokeWidth={ESTILO_GRAFICA.grosorLinea} strokeDasharray="6 4" pointerEvents="none" className="trazo-aparece" />
+              <path d={observado(curva) ?? undefined} fill="none" stroke={COLOR_OBSERVADO} strokeWidth={ESTILO_GRAFICA.grosorLinea + 0.5} strokeLinejoin="round" pointerEvents="none" pathLength={1} className="trazo-dibujado" />
               <line x1={xAjuste} x2={xAjuste} y1={m.arriba} y2={alto - m.abajo} stroke={COLOR_AJUSTE} strokeDasharray="2 3" pointerEvents="none" />
               <text x={xAjuste + 4} y={m.arriba + 10} fontSize={ESTILO_GRAFICA.tamanoTexto} fill={COLOR_AJUSTE}>
                 datos hasta aquí

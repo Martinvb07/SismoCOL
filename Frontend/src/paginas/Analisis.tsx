@@ -55,9 +55,7 @@ function Pestanas({ activa, alCambiar }: { activa: Pestana; alCambiar: (p: Pesta
           aria-selected={activa === p.id}
           aria-controls={`panel-${p.id}`}
           onClick={() => alCambiar(p.id)}
-          className={`-mb-px shrink-0 whitespace-nowrap rounded-t-md border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-            activa === p.id ? 'border-primario text-primario' : 'border-transparent text-tinta-secundaria hover:text-tinta'
-          }`}
+          className="pestana"
         >
           {p.titulo}
         </button>
@@ -170,19 +168,19 @@ export default function PaginaAnalisis() {
       <Pestanas activa={pestana} alCambiar={setPestana} />
 
       {pestana === 'pronostico' && (
-        <div role="tabpanel" id="panel-pronostico" aria-labelledby="pestana-pronostico" className="space-y-4">
+        <div role="tabpanel" id="panel-pronostico" aria-labelledby="pestana-pronostico" className="panel-pestana space-y-5">
           {zona === null ? <EstadoVacio titulo="Elige una zona" /> : <PronosticoZona zona={zona} />}
         </div>
       )}
 
       {pestana === 'amenaza' && (
-        <div role="tabpanel" id="panel-amenaza" aria-labelledby="pestana-amenaza" className="space-y-4">
+        <div role="tabpanel" id="panel-amenaza" aria-labelledby="pestana-amenaza" className="panel-pestana space-y-5">
           <Amenaza zona={zona ?? ''} />
         </div>
       )}
 
       {pestana === 'frecuencia' && (
-        <div role="tabpanel" id="panel-frecuencia" aria-labelledby="pestana-frecuencia" className="space-y-4">
+        <div role="tabpanel" id="panel-frecuencia" aria-labelledby="pestana-frecuencia" className="panel-pestana space-y-5">
           <ContenidoConsulta consulta={todasAdvertencias} alto="h-24">
             {(a) => {
               const resumen = resumenAdvertencias(

@@ -23,7 +23,7 @@ export function ImportanciaGlobal({ importancia }: { importancia: ImportanciaSha
             <td className="w-1/2">
               <div className="flex items-center gap-2">
                 <div className="h-3 flex-1 rounded bg-fondo" aria-hidden="true">
-                  <div className="h-3 rounded" style={{ width: `${(i.media / maximo) * 100}%`, backgroundColor: COLOR_NEGATIVO }} />
+                  <div className="barra-horizontal h-3 rounded" style={{ width: `${(i.media / maximo) * 100}%`, backgroundColor: COLOR_NEGATIVO }} />
                 </div>
                 <span className="w-16 text-right tabular-nums">{formatearNumero(i.media, 3)}</span>
               </div>

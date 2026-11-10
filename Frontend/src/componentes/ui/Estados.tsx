@@ -8,9 +8,16 @@ import { IconoAlerta, IconoInfo, IconoRecargar } from './Iconos';
 
 export function EstadoCargando({ texto = 'Cargando…', alto = 'h-40' }: { texto?: string; alto?: string }) {
   return (
-    <div role="status" aria-live="polite" className={`flex ${alto} items-center justify-center gap-2 text-sm text-tinta-tenue`}>
-      <Giro className="text-primario" />
-      {texto}
+    <div role="status" aria-live="polite" className={`flex ${alto} flex-col justify-center gap-3`}>
+      <div className={alto === 'h-12' ? 'hidden' : 'space-y-2'} aria-hidden="true">
+        <div className="esqueleto h-3 w-2/3" />
+        <div className="esqueleto h-3 w-full" />
+        <div className="esqueleto h-3 w-5/6" />
+      </div>
+      <p className="flex items-center gap-2 text-sm text-tinta-tenue">
+        <Giro className="text-primario" />
+        {texto}
+      </p>
     </div>
   );
 }

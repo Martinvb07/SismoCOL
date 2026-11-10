@@ -1,5 +1,8 @@
 import {
   Activity,
+  CalendarClock,
+  Lightbulb,
+  Mountain,
   ArrowDownUp,
   BarChart3,
   CalendarDays,
@@ -74,6 +77,10 @@ export const IconoSol = crear(Sun);
 export const IconoLuna = crear(Moon);
 export const IconoCalendario = crear(CalendarDays);
 export const IconoReplicas = crear(Activity);
+export const IconoIdea = crear(Lightbulb);
+export const IconoAmenaza = crear(Mountain);
+export const IconoPronostico = crear(CalendarClock);
+export const IconoChevron = crear(ChevronDown);
 
 const IconoContraerAbierto = crear(PanelLeftClose);
 const IconoContraerCerrado = crear(PanelLeftOpen);

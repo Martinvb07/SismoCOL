@@ -107,9 +107,9 @@ export function GraficaPronostico({ serie, pronostico, alto = ALTO_POR_DEFECTO }
                 tituloEn={(m.arriba + alto - m.abajo) / 2}
               />
               <Eje escala={x} orientacion="abajo" y={alto - m.abajo} configurar={configurarX} />
-              <path d={area95(banda) ?? undefined} fill={COLOR_BANDA} opacity={0.35} pointerEvents="none" />
-              <path d={area80(banda) ?? undefined} fill={COLOR_BANDA} opacity={0.7} pointerEvents="none" />
-              <path d={lineaSerie(serie) ?? undefined} fill="none" stroke={COLOR_SERIE} strokeWidth={ESTILO_GRAFICA.grosorLinea} pointerEvents="none" />
+              <path d={area95(banda) ?? undefined} fill={COLOR_BANDA} opacity={0.35} pointerEvents="none" className="banda-aparece" />
+              <path d={area80(banda) ?? undefined} fill={COLOR_BANDA} opacity={0.7} pointerEvents="none" className="banda-aparece" />
+              <path d={lineaSerie(serie) ?? undefined} fill="none" stroke={COLOR_SERIE} strokeWidth={ESTILO_GRAFICA.grosorLinea} strokeLinejoin="round" pointerEvents="none" pathLength={1} className="trazo-dibujado" />
               <path
                 d={lineaPronostico(banda) ?? undefined}
                 fill="none"
@@ -117,6 +117,7 @@ export function GraficaPronostico({ serie, pronostico, alto = ALTO_POR_DEFECTO }
                 strokeWidth={ESTILO_GRAFICA.grosorLinea}
                 strokeDasharray="6 4"
                 pointerEvents="none"
+                className="trazo-aparece"
               />
               {puntos.map((p) => (
                 <rect

@@ -6,12 +6,16 @@ import type { NivelAdvertencia, NivelImpacto } from '@/api/tipos';
  * interfaz usa los tokens de marca. Cada color va siempre con una etiqueta de texto.
  */
 
+/** `relleno` es fijo (marcas de gráficas y mapas); fondo, texto y borde siguen el tema (variables en index.css). */
+const conTema = <T extends string>(tono: T, relleno: string) =>
+  ({ relleno, fondo: `var(--estado-${tono}-fondo)`, texto: `var(--estado-${tono}-texto)`, borde: `var(--estado-${tono}-borde)` }) as const;
+
 export const COLORES_ESTADO = {
-  verde: { relleno: '#2e9e5b', fondo: '#e3f4ea', texto: '#1d6b3c', borde: '#9fd6b5' },
-  amarillo: { relleno: '#e2b007', fondo: '#fdf5d8', texto: '#7a5d00', borde: '#f0d77a' },
-  naranja: { relleno: '#e7792b', fondo: '#fde9da', texto: '#8f4410', borde: '#f3b88c' },
-  rojo: { relleno: '#d23c3c', fondo: '#fbe3e3', texto: '#931f1f', borde: '#eea3a3' },
-  neutro: { relleno: '#9aa7ad', fondo: '#eef1f3', texto: '#4a5a61', borde: '#cfd7db' },
+  verde: conTema('verde', '#2e9e5b'),
+  amarillo: conTema('amarillo', '#e2b007'),
+  naranja: conTema('naranja', '#e7792b'),
+  rojo: conTema('rojo', '#d23c3c'),
+  neutro: conTema('neutro', '#9aa7ad'),
 } as const;
 
 export type TonoEstado = keyof typeof COLORES_ESTADO;

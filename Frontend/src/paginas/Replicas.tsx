@@ -356,9 +356,7 @@ function SismosFuertes({ alElegir, elegido }: { alElegir: (id: number) => void; 
                 type="button"
                 onClick={() => alElegir(s.idSismo)}
                 aria-pressed={elegido === s.idSismo}
-                className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors hover:border-primario ${
-                  elegido === s.idSismo ? 'border-primario bg-primario-claro' : 'border-borde bg-superficie'
-                }`}
+                className="sismo-fuerte"
               >
                 <span className="font-semibold">{formatearMagnitud(s.magnitud)}</span> · {formatearFechaHora(s.fechaHora)}
                 <span className="block text-tinta-secundaria">{s.municipio ? `${s.municipio} (${s.departamento ?? ''})` : 'Fuera de un municipio'}</span>
@@ -443,7 +441,24 @@ function BuscadorSismos({ alElegir, elegido }: { alElegir: (id: number) => void;
       >
         {(r) => (
           <>
-            <div className="overflow-x-auto" aria-busy={resultados.isFetching}>
+            {/* Celular: tarjetas que se tocan completas (la tabla escondería el botón a la derecha) */}
+            <ul className={`space-y-2 sm:hidden ${resultados.isPlaceholderData ? 'opacity-60' : ''}`} aria-label="Sismos encontrados">
+              {r.datos.map((s) => (
+                <li key={s.idSismo}>
+                  <button type="button" className="sismo-fuerte flex items-center gap-3" aria-pressed={s.idSismo === elegido} onClick={() => alElegir(s.idSismo)}>
+                    <InsigniaEstado estilo={estiloMagnitud(s.magnitud)}>{formatearMagnitud(s.magnitud)}</InsigniaEstado>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium">{formatearFechaHora(s.fechaHora)}</span>
+                      <span className="block truncate text-xs text-tinta-tenue">
+                        {s.municipio ? `${s.municipio} (${s.departamento ?? ''})` : (s.departamento ?? 'Sin municipio')} · {ETIQUETAS_FUENTE[s.fuente]}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs font-semibold text-primario">Réplicas →</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto sm:block" aria-busy={resultados.isFetching}>
               <table className="tabla min-w-[40rem]">
                 <caption className="sr-only">Sismos encontrados para ver su pronóstico de réplicas, del más reciente al más antiguo</caption>
                 <thead>

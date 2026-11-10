@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { GLOSARIO, type TerminoGlosario } from '@/lib/glosario';
 import type { NivelSemaforo } from '@/umbralesSemaforo';
-import { IconoInfo } from './Iconos';
+import { IconoChevron, IconoIdea, IconoInfo } from './Iconos';
 
 /* ---------- Ayuda (i) ---------- */
 
@@ -128,10 +128,10 @@ const ORDEN: readonly NivelSemaforo[] = ['BAJO', 'MODERADO', 'ALTO'];
 export function Semaforo({ nivel, explicacion, titulo = 'Nivel' }: { nivel: NivelSemaforo; explicacion: string; titulo?: string }) {
   const e = ESTILO_SEMAFORO[nivel];
   return (
-    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold ${e.clases}`}>
+    <div className={`semaforo ${e.clases}`}>
       <span className="flex gap-1" aria-hidden="true">
         {ORDEN.map((n) => (
-          <span key={n} className={`h-2.5 w-2.5 rounded-full ${n === nivel ? e.luz : 'bg-current opacity-20'}`} />
+          <span key={n} className={`semaforo-luz ${n === nivel ? `encendida ${e.luz}` : 'bg-current opacity-20'}`} />
         ))}
       </span>
       <span>
@@ -146,12 +146,17 @@ export function Semaforo({ nivel, explicacion, titulo = 'Nivel' }: { nivel: Nive
 
 export function EnPalabrasSimples({ children, semaforo }: { children: ReactNode; semaforo?: ReactNode }) {
   return (
-    <section aria-label="En palabras simples" className="rounded-2xl border border-primario/30 bg-primario/5 px-4 py-3 sm:px-5">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-primario">En palabras simples</h2>
+    <section aria-label="En palabras simples" className="palabras-simples animate-entrada">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <span className="palabras-simples-icono" aria-hidden="true">
+            <IconoIdea className="h-5 w-5" />
+          </span>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-primario">En palabras simples</h2>
+        </div>
         {semaforo}
       </div>
-      <div className="mt-1 space-y-1 text-base leading-relaxed text-tinta">{children}</div>
+      <div className="mt-3 space-y-1.5 text-base leading-relaxed text-tinta sm:text-lg">{children}</div>
     </section>
   );
 }
@@ -161,14 +166,12 @@ export function EnPalabrasSimples({ children, semaforo }: { children: ReactNode;
 /** Bloque plegable «Ver detalle técnico», cerrado por defecto. */
 export function DetalleTecnico({ children, titulo = 'Ver detalle técnico' }: { children: ReactNode; titulo?: string }) {
   return (
-    <details className="group rounded-2xl border border-borde bg-superficie">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-tinta-secundaria hover:text-tinta sm:px-5 [&::-webkit-details-marker]:hidden">
+    <details className="detalle-tecnico">
+      <summary>
         {titulo}
-        <span aria-hidden="true" className="transition-transform group-open:rotate-180">
-          ▾
-        </span>
+        <IconoChevron className="h-4 w-4" />
       </summary>
-      <div className="space-y-4 border-t border-borde px-4 py-4 sm:px-5">{children}</div>
+      <div className="detalle-contenido space-y-4 border-t border-borde px-4 py-4 sm:px-6">{children}</div>
     </details>
   );
 }

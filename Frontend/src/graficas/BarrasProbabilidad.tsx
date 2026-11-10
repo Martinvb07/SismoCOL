@@ -82,6 +82,7 @@ export function BarrasProbabilidad({ probabilidades, seleccionada }: Props) {
                     width={Math.max(0, x(valor) - MARGENES.izquierda)}
                     height={y.bandwidth()}
                     fill={estilo.relleno}
+                    className="barra-horizontal"
                     rx={ESTILO_GRAFICA.radioBarra}
                     stroke={esSeleccionada ? 'var(--grafica-tinta)' : 'none'}
                     strokeWidth={esSeleccionada ? 1.5 : 0}

@@ -142,7 +142,7 @@ function ZonasMasAmenazadas({ datos }: { datos: RespuestaPeriodosRetorno }) {
             {z.nombre}
           </span>
           <span className="h-3 flex-1 rounded bg-fondo" aria-hidden="true">
-            <span className="block h-3 rounded bg-peligro" style={{ width: `${Math.max(z.probabilidad * 100, 1)}%` }} />
+            <span className="barra-horizontal block h-3 rounded bg-peligro" style={{ width: `${Math.max(z.probabilidad * 100, 1)}%` }} />
           </span>
           <span className="w-24 text-right tabular-nums">{porcentajeSimple(z.probabilidad)}</span>
         </li>

@@ -76,6 +76,7 @@ export function HistogramaMagnitud({ bins, alto = ALTO_POR_DEFECTO }: Props) {
                       height={altoBarra}
                       rx={altoBarra > ESTILO_GRAFICA.radioBarra ? ESTILO_GRAFICA.radioBarra : 0}
                       fill={colorMagnitud(bin.desde)}
+                      className="barra-crece"
                       opacity={tooltip && tooltip.dato !== bin ? 0.6 : 1}
                     />
                     {/* Área de interacción más grande que la marca */}
