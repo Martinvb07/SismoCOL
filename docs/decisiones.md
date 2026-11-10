@@ -151,3 +151,9 @@ Reemplaza en parte a D7 (construcción de los ejemplos) y amplía las variables 
   - La población es la de 2018 incluso para reportes antiguos.
   - El indicador de vivienda es por hogares, no por viviendas.
   - El número de reportes con daño ALTO es pequeño.
+
+## D19 — Informe de resultados generado desde la base (2026-11-10)
+`docs/resultados_analitica.md` no se escribe a mano: lo genera `python -m eda.resultados_analitica` con lo que guardaron los cálculos (`pronostico_replicas`, `pronostico_actividad`, `backtesting_pronostico`, `calculo_amenaza`, `periodo_retorno`, `modelo_predictivo`). Así cada número se puede rastrear hasta su cálculo, con sus parámetros y su periodo.
+- Si falta una fuente (SGC o DesInventar), el informe lo dice y deja la sección como pendiente en lugar de mostrar valores.
+- La versión versionada del 2026-11-10 se generó en un entorno sin el Excel del SGC ni DesInventar, solo con datos públicos descargados (USGS histórico, USGS 2026 y UNGRD). Por eso las secciones 3 (pronóstico mensual) y 5 (modelo de impacto) quedaron pendientes y la validación de réplicas usa solo eventos USGS M ≥ 2,5.
+- En el servidor, con todos los datos cargados, hay que regenerarlo; la validación de réplicas con el SGC dará números distintos, porque su completitud es mayor.

@@ -6,7 +6,7 @@
 
 ---
 
-> **SismoCol no predice sismos.** Una advertencia indica que la actividad reciente supera estadísticamente el comportamiento habitual de la zona. No es un pronóstico de sismo ni reemplaza los boletines oficiales del SGC.
+> **SismoCol no predice sismos.** Una advertencia indica que la actividad reciente supera estadísticamente el comportamiento habitual de la zona. Los pronósticos (réplicas, actividad mensual, periodos de retorno, amenaza) son probabilísticos, con intervalos y validados con datos pasados: no dicen cuándo ni dónde ocurrirá un sismo. Nada de esto reemplaza los boletines oficiales del SGC.
 
 ## Qué hace
 
@@ -17,7 +17,11 @@
   - tendencia (Mann-Kendall + pendiente de Sen);
   - probabilidad de ocurrencia (Poisson);
   - advertencias de actividad elevada.
-- **Estimación del nivel de impacto** de un sismo hipotético con un modelo de clasificación.
+- **Catálogo histórico USGS** (M ≥ 4,5 desde 1973), separado del catálogo del SGC, para las tasas de sismos grandes.
+- **Pronóstico de réplicas** (Reasenberg-Jones / Omori-Utsu) de los sismos M ≥ 6: probabilidad y número esperado de réplicas M ≥ 4, 5 y 6 en 24 h, 7 y 30 días, con IC 95 % y validación retrospectiva (p. ej. Chocó M 7,4, 10-ago-2026).
+- **Pronóstico de actividad mensual por zona** a 12 meses: SARIMA contra el modelo ingenuo y la media móvil, con backtesting por origen móvil (MAE, MAPE) y bandas del 80/95 %.
+- **Periodo de retorno y mapa de amenaza**: Tr de M 5, 6 y 7 por zona con Gutenberg-Richter, probabilidades de Poisson a 30 días y 1–50 años, y sismicidad suavizada (Frankel 1995) en celdas de 0,5°.
+- **Estimación del nivel de impacto** de un sismo hipotético: intensidad estimada (Allen, Wald y Worden 2012), población y vulnerabilidad de vivienda (DANE); comparación de modelos con validación cruzada, calibración, explicabilidad SHAP y **simulador de escenarios** para todos los municipios cercanos.
 - **Simulación física**: la magnitud elegida se envía por MQTT a un ESP32 con LEDs, vibración y alarma.
 - **Administración**: carga de datasets, sincronización con USGS y UNGRD, versiones del modelo, parámetros y usuarios.
 
@@ -123,10 +127,14 @@ El proyecto sigue CRISP-DM. Cada fase tiene su documento en [docs/crisp-dm](docs
 | 5. Modelo de impacto | Entrenamiento, versiones, predicción | Modelado y evaluación |
 | 6. Simulación | MQTT, ESP32 | Despliegue |
 | 7. Cierre | Pruebas, seguridad, Nginx, guía de VPS con PM2 | Despliegue |
+| 8. Analítica de resultados futuros | Catálogo histórico, réplicas, pronóstico mensual, periodo de retorno, amenaza, modelo de impacto v2 (D14–D18) | Modelado, evaluación y despliegue |
+
+Las métricas de validación de la fase 8 se generan con `python -m eda.resultados_analitica` en [docs/resultados_analitica.md](docs/resultados_analitica.md).
 
 ## Fuentes de datos
 
 - **SGC**: catálogo sísmico 2022–2026, incluido en el Excel consolidado.
 - **DesInventar y UNGRD**: reportes de daño 1917–2022. Los reportes recientes se traen de la API de datos.gov.co (`2343-nuqp`).
-- **USGS FDSN**: epicentros de los sismos con M ≥ 2,5.
+- **USGS FDSN**: epicentros de los sismos con M ≥ 2,5 y catálogo histórico M ≥ 4,5 desde 1973 (`USGS_HIST`).
+- **DANE**: proyecciones de población municipal 2018–2042 (PPED) y déficit habitacional CNPV 2018 (material de paredes).
 - **DANE DIVIPOLA**: centroides de municipios (datos.gov.co `gdxc-w37w`).

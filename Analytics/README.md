@@ -12,6 +12,14 @@ Python 3.11 + FastAPI + pandas/NumPy/SciPy/scikit-learn + APScheduler. Es un ser
 | `sismocol/fuentes/` | Clientes de USGS FDSN y UNGRD (datos.gov.co), con reintentos |
 | `sismocol/servicio.py` | Orquesta la ingesta de archivos y la sincronización |
 | `sismocol/comandos.py` | Comandos de administración (`usgs-historico`) |
+| `sismocol/analisis.py` | Frecuencia por zona, Gutenberg-Richter, tendencia y advertencias; el recálculo también corre réplicas, pronóstico y amenaza |
+| `sismocol/replicas.py` | Pronóstico de réplicas Reasenberg-Jones y validación retrospectiva (D15) |
+| `sismocol/pronostico.py` | Pronóstico mensual por zona: SARIMA contra ingenuo y media móvil, backtesting (D16) |
+| `sismocol/amenaza.py` | Periodo de retorno y mapa de sismicidad suavizada con USGS_HIST (D17) |
+| `sismocol/intensidad.py` | MMI de Allen, Wald y Worden (2012) |
+| `sismocol/fuentes/dane.py` | Población municipal y déficit habitacional del DANE |
+| `sismocol/modelo.py` | Modelo de impacto: variables, comparación con CV, calibración, SHAP, escenarios (D18) |
+| `eda/resultados_analitica.py` | Genera `docs/resultados_analitica.md` con las métricas guardadas en la base |
 | `sismocol/db.py` | Persistencia en MySQL (SQLAlchemy Core, tablas reflejadas del esquema de Prisma) |
 | `config/umbrales_impacto.json` | Reglas de `nivel_impacto` |
 | `eda/` | Barrido de datos y vista previa de una carga |
@@ -29,6 +37,14 @@ Todos los endpoints, salvo `/health`, exigen la cabecera `X-Token-Interno` con e
 ```bash
 .venv/Scripts/python -m sismocol.comandos usgs-historico            # incremental
 .venv/Scripts/python -m sismocol.comandos usgs-historico --desde 1973
+```
+
+## Informe de resultados de la analítica
+
+Después de cargar los datos, recalcular el análisis, validar las réplicas (Admin → Pronóstico de réplicas → «Ejecutar validación retrospectiva») y entrenar el modelo:
+
+```bash
+.venv/bin/python -m eda.resultados_analitica --salida ../docs/resultados_analitica.md
 ```
 
 ## Vista previa de una carga (sin escribir en la base)
