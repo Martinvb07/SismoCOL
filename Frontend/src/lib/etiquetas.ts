@@ -1,4 +1,4 @@
-import type { EstadoEnvio, Fuente, MetodoReplicas, PrecisionUbicacion, Rol, TipoActividad } from '@/api/tipos';
+import type { EstadoEnvio, Fuente, MetodoReplicas, ModeloPronostico, PrecisionUbicacion, Rol, TipoActividad } from '@/api/tipos';
 
 export const ETIQUETAS_ROL: Record<Rol, string> = {
   ADMIN: 'Administrador',
@@ -11,6 +11,12 @@ export const ETIQUETAS_FUENTE: Record<Fuente, string> = {
   DESINVENTAR: 'DesInventar',
   USGS: 'USGS',
   USGS_HIST: 'USGS histórico',
+};
+
+export const ETIQUETAS_MODELO_PRONOSTICO: Record<ModeloPronostico, string> = {
+  SARIMA: 'SARIMA',
+  INGENUO: 'Ingenuo (último mes)',
+  MEDIA_MOVIL_12: 'Media móvil de 12 meses',
 };
 
 export const ETIQUETAS_METODO: Record<MetodoReplicas, string> = {

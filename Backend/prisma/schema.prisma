@@ -73,6 +73,12 @@ enum TipoPronosticoReplicas {
   VALIDACION
 }
 
+enum ModeloPronostico {
+  SARIMA
+  INGENUO
+  MEDIA_MOVIL_12
+}
+
 enum MetodoAjusteReplicas {
   MAXIMA_VEROSIMILITUD
   GENERICO_A_SECUENCIA
@@ -340,4 +346,46 @@ model PronosticoReplicas {
   @@index([idSismoPrincipal, tipo, fechaCalculo])
   @@index([fechaCalculo])
   @@map("pronostico_replicas")
+}
+
+/// Pronóstico mensual de sismos M ≥ Mc por zona (D16). Una fila por zona y cálculo.
+model PronosticoActividad {
+  idPronostico        Int              @id @default(autoincrement()) @map("id_pronostico")
+  zona                String           @db.VarChar(60)
+  /// Modelo de menor MAE en el backtesting: es el que se muestra.
+  modeloGanador       ModeloPronostico @map("modelo_ganador")
+  magnitudCompletitud Decimal          @map("magnitud_completitud") @db.Decimal(3, 1)
+  /// Meses completos usados (el primero y el último del catálogo se descartan si son parciales).
+  periodoInicio       DateTime         @map("periodo_inicio") @db.Date
+  periodoFin          DateTime         @map("periodo_fin") @db.Date
+  nMeses              Int              @map("n_meses") @db.UnsignedSmallInt
+  /// Orden SARIMA, transformación, horizonte y criterio de selección.
+  parametros          Json
+  /// Serie histórica y pronóstico de 12 meses con bandas del 80 y el 95 % de cada modelo.
+  resultados          Json
+  fechaCalculo        DateTime         @default(now()) @map("fecha_calculo") @db.DateTime(0)
+
+  backtesting BacktestingPronostico[]
+
+  @@index([zona, fechaCalculo])
+  @@index([fechaCalculo])
+  @@map("pronostico_actividad")
+}
+
+/// Métricas del backtesting por origen móvil (t+1..t+3) de cada modelo.
+model BacktestingPronostico {
+  idBacktesting Int              @id @default(autoincrement()) @map("id_backtesting")
+  idPronostico  Int              @map("id_pronostico")
+  modelo        ModeloPronostico
+  mae           Decimal?         @db.Decimal(10, 4)
+  /// En %; excluye los meses con 0 eventos.
+  mape          Decimal?         @db.Decimal(10, 4)
+  nPronosticos  Int              @map("n_pronosticos") @db.UnsignedInt
+  /// MAE por horizonte y número de meses con MAPE definido.
+  detalle       Json
+
+  pronostico PronosticoActividad @relation(fields: [idPronostico], references: [idPronostico], onDelete: Cascade)
+
+  @@index([idPronostico])
+  @@map("backtesting_pronostico")
 }

@@ -83,3 +83,19 @@ Para cada sismo principal con M ≥ 6 (`REPLICAS_MAGNITUD_MIN`) del catálogo in
   - El catálogo del SGC termina el 26-ago-2026, 16 días después del sismo de Chocó (M 7,4, 10-ago-2026, 116 km de profundidad). Lo posterior viene de USGS M ≥ 2,5, cuya completitud es menor; por eso las ventanas de 30 días mezclan fuentes.
   - Los sismos de profundidad intermedia suelen tener pocas réplicas.
   - Un enjambre dentro de la ventana, como el de mediados de septiembre de 2026 cerca de Chocó (≈ 50–70 km de profundidad), no sigue Omori. Cuando p o c llegan a su límite, el ajuste lo advierte.
+
+## D16 — Pronóstico de la actividad mensual por zona (2026-11-10)
+Para cada zona con análisis propio (no agrupada en su región) se pronostica el número de sismos M ≥ Mc de la zona por mes durante los próximos 12 meses. Se usa solo el catálogo SGC, como en D9.
+- **Serie:** conteo mensual en hora de Colombia, solo con meses completos. El primer mes (nov-2022 desde el día 10) y el último (ago-2026 hasta el día 26) se descartan; quedan unos 44 meses (dic-2022 a jul-2026). Por eso el pronóstico empieza en ago-2026.
+- **Modelos:**
+  - SARIMA (statsmodels) sobre log(1 + conteo). El orden sale de la rejilla (p,d,q) ∈ {(0,0,0), (1,0,0), (2,0,0), (1,0,1), (0,1,1), (1,1,1)} × estacional {(0,0,0,0), (1,0,0,12)}. Se elige por AIC usando solo los primeros 24 meses (antes del primer origen del backtesting), para no filtrar información del periodo evaluado.
+  - Ingenuo (último mes).
+  - Media móvil de 12 meses.
+- **Backtesting por origen móvil:** se entrena hasta el mes t (t ≥ 24) y se pronostican t+1..t+3. Se reportan MAE y MAPE; el MAPE excluye los meses con 0 eventos. En la vista se muestra el modelo de menor MAE de cada zona. Las métricas de los tres modelos se guardan en `backtesting_pronostico`.
+- **Bandas del 80 y el 95 %:**
+  - SARIMA: los cuantiles en escala log se transforman con expm1, así que el valor central es la mediana, no la media.
+  - Modelos base: cuantiles de los errores a un paso del backtesting. Para el ingenuo crecen con √h y para la media móvil se mantienen. Es una aproximación.
+- **Limitaciones:**
+  - Con unos 44 meses, la componente estacional de 12 meses se estima con apenas 3 ciclos.
+  - El conteo incluye réplicas (D13), así que una secuencia grande infla los meses siguientes y el ingenuo puede salir favorecido o castigado.
+  - Si un modelo base gana a SARIMA en una zona, se reporta así.

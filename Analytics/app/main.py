@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel, Field
 
-from sismocol import analisis, db, modelo, replicas, servicio
+from sismocol import analisis, db, modelo, pronostico, replicas, servicio
 from sismocol.config import Ajustes, ajustes
 from sismocol.ingest import FUENTES, ErrorIngesta
 
@@ -179,6 +179,11 @@ def advertencias(_: Protegido, cfg: Config, zona: str | None = None, nivel: str 
     if nivel is not None and nivel not in NIVELES:
         raise HTTPException(status_code=400, detail=f"Nivel no válido: {nivel}")
     return analisis.advertencias(cfg.database_url, zona, nivel)
+
+
+@app.get("/analisis/pronostico")
+def pronostico_zona(_: Protegido, cfg: Config, zona: str) -> dict[str, object]:
+    return pronostico.pronostico_zona(cfg.database_url, zona)
 
 
 @app.post("/analisis/recalcular", status_code=202)

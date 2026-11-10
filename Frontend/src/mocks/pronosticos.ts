@@ -4,6 +4,9 @@
  */
 import type {
   DetalleReplicas,
+  ModeloPronostico,
+  PronosticoActividad,
+  PuntoPronostico,
   HorizonteReplicas,
   PronosticoReplicas,
   PuntoCurvaReplicas,
@@ -136,5 +139,65 @@ export function detalleReplicas(idSismo: number): DetalleReplicas | null {
     principal: PRINCIPAL,
     pronostico: pronostico('PRONOSTICO', 16.5 * 24, 1),
     validacion: [24, 72, 168].map((h, i) => pronostico('VALIDACION', h, 2 + i)),
+  };
+}
+
+/* ---------- Pronóstico de actividad por zona (simulado) ---------- */
+
+function sumarMeses(mes: string, n: number): string {
+  const [a, m] = mes.split('-').map(Number) as [number, number];
+  const total = a * 12 + (m - 1) + n;
+  return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, '0')}`;
+}
+
+export function pronosticoActividad(zona: string): PronosticoActividad {
+  const base = 20 + (zona.length % 7) * 10;
+  const serie = Array.from({ length: 44 }, (_, i) => ({
+    mes: sumarMeses('2022-12', i),
+    eventos: Math.round(base + 6 * Math.sin((2 * Math.PI * i) / 12) + ((i * 7) % 5) - 2),
+  }));
+  const ultimo = serie[serie.length - 1]?.mes ?? '2026-07';
+  const generar = (valor: number, ancho: number): PuntoPronostico[] =>
+    Array.from({ length: 12 }, (_, i) => ({
+      mes: sumarMeses(ultimo, i + 1),
+      valor,
+      inferior80: Math.max(0, valor - ancho),
+      superior80: valor + ancho,
+      inferior95: Math.max(0, valor - 1.6 * ancho),
+      superior95: valor + 1.6 * ancho,
+    }));
+  const pronosticos: Record<ModeloPronostico, PuntoPronostico[]> = {
+    SARIMA: generar(base, 6),
+    INGENUO: generar(serie[serie.length - 1]?.eventos ?? base, 9),
+    MEDIA_MOVIL_12: generar(base + 1, 7),
+  };
+  return {
+    zona,
+    modeloGanador: 'MEDIA_MOVIL_12',
+    mc: 2.1,
+    periodoInicio: '2022-12-01',
+    periodoFin: '2026-07-31',
+    nMeses: serie.length,
+    parametros: {
+      mc: 2.1,
+      ordenSarima: [1, 0, 0],
+      ordenEstacional: [0, 0, 0, 0],
+      aic: 120.4,
+      transformacion: 'log1p',
+      horizonteMeses: 12,
+      horizonteBacktest: 3,
+      minMesesEntrenamiento: 24,
+      catalogo: 'SGC',
+      seleccionOrden: 'AIC con los primeros 24 meses',
+    },
+    serie,
+    pronostico: pronosticos.MEDIA_MOVIL_12,
+    pronosticos,
+    backtesting: [
+      { modelo: 'MEDIA_MOVIL_12', mae: 4.1, mape: 14.2, nPronosticos: 57, maePorHorizonte: { '1': 4.0, '2': 4.1, '3': 4.2 } },
+      { modelo: 'SARIMA', mae: 4.4, mape: 15.0, nPronosticos: 57, maePorHorizonte: { '1': 4.2, '2': 4.4, '3': 4.6 } },
+      { modelo: 'INGENUO', mae: 5.9, mape: 20.3, nPronosticos: 57, maePorHorizonte: { '1': 5.1, '2': 5.9, '3': 6.7 } },
+    ],
+    fechaCalculo: '2026-11-10T07:15:00.000Z',
   };
 }

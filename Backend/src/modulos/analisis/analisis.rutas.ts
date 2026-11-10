@@ -84,6 +84,11 @@ rutasAnalisis.get('/analisis/gutenberg-richter', autenticar, validarQuery(esquem
   res.json(await llamarAnalytics(conQuery('/analisis/gutenberg-richter', { zona })));
 });
 
+rutasAnalisis.get('/analisis/pronostico', autenticar, validarQuery(esquemaZona), async (_req, res) => {
+  const { zona } = res.locals.query as z.infer<typeof esquemaZona>;
+  res.json(await llamarAnalytics(conQuery('/analisis/pronostico', { zona })));
+});
+
 rutasAnalisis.get('/analisis/probabilidades', autenticar, async (_req, res) => {
   res.json(await llamarAnalytics('/analisis/probabilidades'));
 });

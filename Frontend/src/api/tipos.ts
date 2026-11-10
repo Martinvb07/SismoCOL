@@ -482,3 +482,53 @@ export interface RespuestaValidacionReplicas {
   resumenGenerico: ResumenValidacionReplicas;
   ventanas: number;
 }
+
+/* ---------- Pronóstico de actividad por zona ---------- */
+
+export type ModeloPronostico = 'SARIMA' | 'INGENUO' | 'MEDIA_MOVIL_12';
+
+export interface PuntoPronostico {
+  mes: string; // AAAA-MM
+  valor: number;
+  inferior80: number;
+  superior80: number;
+  inferior95: number;
+  superior95: number;
+}
+
+export interface MetricaBacktesting {
+  modelo: ModeloPronostico;
+  mae: number | null;
+  /** En %; excluye los meses con 0 eventos. */
+  mape: number | null;
+  nPronosticos: number;
+  maePorHorizonte: Record<string, number>;
+}
+
+export interface PronosticoActividad {
+  zona: string;
+  modeloGanador: ModeloPronostico;
+  mc: number;
+  periodoInicio: string;
+  periodoFin: string;
+  nMeses: number;
+  parametros: {
+    mc: number;
+    ordenSarima: number[];
+    ordenEstacional: number[];
+    aic: number | null;
+    transformacion: string;
+    horizonteMeses: number;
+    horizonteBacktest: number;
+    minMesesEntrenamiento: number;
+    catalogo: string;
+    seleccionOrden: string;
+  };
+  serie: Array<{ mes: string; eventos: number }>;
+  /** Pronóstico del modelo ganador. */
+  pronostico: PuntoPronostico[];
+  pronosticos: Record<ModeloPronostico, PuntoPronostico[]>;
+  /** Ordenado de menor a mayor MAE. */
+  backtesting: MetricaBacktesting[];
+  fechaCalculo: string;
+}

@@ -23,7 +23,7 @@ import type {
 import { FUENTES } from '@/api/tipos';
 import { URL_API } from '@/config';
 import { probabilidadPoisson } from '@/lib/analisis';
-import { detalleReplicas, PRINCIPALES_REPLICAS } from './pronosticos';
+import { detalleReplicas, PRINCIPALES_REPLICAS, pronosticoActividad } from './pronosticos';
 import { calcularEstadisticas, calcularFrecuencia, calcularGR, filtrarSismos } from './calculos';
 import {
   ADVERTENCIAS,
@@ -237,6 +237,13 @@ export const handlers = [
     if (u instanceof Response) return u;
     await delay(LATENCIA_MS * 4);
     return HttpResponse.json({ estado: 'listo', principales: PRINCIPALES_REPLICAS.length }, { status: 201 });
+  }),
+
+  http.get(ruta('/api/analisis/pronostico'), ({ request }) => {
+    const u = autorizar(request);
+    if (u instanceof Response) return u;
+    const zona = new URL(request.url).searchParams.get('zona') ?? '';
+    return HttpResponse.json(pronosticoActividad(zona));
   }),
 
   http.get(ruta('/api/analisis/zonas'), ({ request }) => {

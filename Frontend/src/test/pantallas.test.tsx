@@ -57,6 +57,10 @@ describe('pantallas con datos simulados', () => {
     expect(await screen.findByText(/log₁₀ N =/, {}, ESPERA)).toBeInTheDocument();
     expect((await screen.findAllByText(/Datos hasta/, {}, ESPERA)).length).toBeGreaterThan(0);
     expect(await screen.findByText('Nido de Bucaramanga', { selector: 'td' }, ESPERA)).toBeInTheDocument();
+    await usuario.click(screen.getByRole('tab', { name: 'Pronóstico' }));
+    expect(await screen.findByRole('table', { name: /backtesting por origen móvil/i }, ESPERA)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /pronóstico de 12 meses/ })).toBeInTheDocument();
+    expect(screen.getAllByText(AVISO_PRONOSTICO).length).toBeGreaterThan(0);
 
     // Pronóstico de réplicas
     await irA(usuario, 'Pronóstico de réplicas');

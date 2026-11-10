@@ -342,10 +342,11 @@ def recalcular(url: str) -> dict[str, object]:
 
 
 def _tareas_posteriores():
-    from sismocol import replicas
+    from sismocol import pronostico, replicas
     from sismocol.config import ajustes
 
-    return [("réplicas", lambda u: replicas.recalcular(u, ajustes().replicas_magnitud_min))]
+    return [("réplicas", lambda u: replicas.recalcular(u, ajustes().replicas_magnitud_min)),
+            ("pronóstico de actividad", pronostico.recalcular)]
 
 
 def recalcular_en_segundo_plano(url: str) -> bool:

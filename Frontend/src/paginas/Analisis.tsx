@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useId, useState } from 'react';
+import { PronosticoZona } from './analisis/PronosticoZona';
 import { apiAnalisis, claves } from '@/api/endpoints';
 import { NIVELES_ADVERTENCIA, type NivelAdvertencia, type Probabilidades, type Zona } from '@/api/tipos';
 import { Insignia, InsigniaEstado, Tarjeta } from '@/componentes/ui/Basicos';
@@ -7,6 +8,7 @@ import { AvisoAlcance, ContenidoConsulta, EstadoVacio } from '@/componentes/ui/E
 import { Selector } from '@/componentes/ui/Formulario';
 import { GraficaGutenbergRichter } from '@/graficas/GraficaGutenbergRichter';
 import { ResumenMannKendall, SerieMensual } from '@/graficas/SerieMensual';
+import { AVISO_PRONOSTICO } from '@/config';
 import { estiloNivelAdvertencia } from '@/lib/escalasColor';
 import { formatearFecha, formatearFechaHora, formatearNumero, formatearPorcentaje, formatearPValor } from '@/lib/formato';
 
@@ -20,6 +22,36 @@ function AvisoAgrupada({ agrupadaEn }: { agrupadaEn: string | null }) {
     <p className="mb-3 text-sm text-tinta-secundaria">
       <Insignia tono="marca">Agrupada</Insignia> La zona no alcanza el mínimo de eventos y se analiza con su región: <strong>{agrupadaEn}</strong>.
     </p>
+  );
+}
+
+type Pestana = 'frecuencia' | 'pronostico';
+
+const PESTANAS: ReadonlyArray<{ id: Pestana; titulo: string }> = [
+  { id: 'frecuencia', titulo: 'Frecuencia y advertencias' },
+  { id: 'pronostico', titulo: 'Pronóstico' },
+];
+
+function Pestanas({ activa, alCambiar }: { activa: Pestana; alCambiar: (p: Pestana) => void }) {
+  return (
+    <div role="tablist" aria-label="Secciones del análisis" className="flex gap-1 border-b border-borde">
+      {PESTANAS.map((p) => (
+        <button
+          key={p.id}
+          type="button"
+          role="tab"
+          id={`pestana-${p.id}`}
+          aria-selected={activa === p.id}
+          aria-controls={`panel-${p.id}`}
+          onClick={() => alCambiar(p.id)}
+          className={`-mb-px rounded-t-md border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            activa === p.id ? 'border-primario text-primario' : 'border-transparent text-tinta-secundaria hover:text-tinta'
+          }`}
+        >
+          {p.titulo}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -67,6 +99,8 @@ export default function PaginaAnalisis() {
   const idNivel = useId();
   const [zonaElegida, setZonaElegida] = useState<string | null>(null);
   const [nivel, setNivel] = useState<NivelAdvertencia | ''>('');
+  const [pestana, setPestana] = useState<Pestana>('frecuencia');
+  const aviso = pestana === 'pronostico' ? AVISO_PRONOSTICO : undefined;
 
   const zonas = useQuery({ queryKey: claves.zonas, queryFn: apiAnalisis.zonas });
   const zona = zonaElegida ?? zonas.data?.[0]?.zona ?? null;
@@ -91,7 +125,7 @@ export default function PaginaAnalisis() {
 
   return (
     <>
-      <AvisoAlcance fechaCorte={fechaCorte} />
+      <AvisoAlcance fechaCorte={fechaCorte} texto={aviso} />
 
       <Tarjeta>
         <ContenidoConsulta consulta={zonas} alto="h-12" esVacio={(z) => z.length === 0} vacio={<EstadoVacio titulo="No hay zonas analizadas todavía" />}>
@@ -118,129 +152,141 @@ export default function PaginaAnalisis() {
         </ContenidoConsulta>
       </Tarjeta>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <Tarjeta titulo="Tendencia mensual" descripcion="Mann-Kendall con pendiente de Sen sobre eventos por mes">
-          {zona === null ? (
-            <EstadoVacio titulo="Elige una zona" />
-          ) : (
-            <ContenidoConsulta consulta={frecuencia} esVacio={(f) => f.serieMensual.length === 0}>
-              {(f) => (
-                <div className="space-y-3">
-                  <AvisoAgrupada agrupadaEn={f.agrupadaEn} />
-                  <ResumenMannKendall mk={f.mannKendall} />
-                  <SerieMensual serie={f.serieMensual} mannKendall={f.mannKendall} />
+      <Pestanas activa={pestana} alCambiar={setPestana} />
+
+      {pestana === 'pronostico' && (
+        <div role="tabpanel" id="panel-pronostico" aria-labelledby="pestana-pronostico" className="space-y-4">
+          {zona === null ? <EstadoVacio titulo="Elige una zona" /> : <PronosticoZona zona={zona} />}
+        </div>
+      )}
+
+      {pestana === 'frecuencia' && (
+        <div role="tabpanel" id="panel-frecuencia" aria-labelledby="pestana-frecuencia" className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <Tarjeta titulo="Tendencia mensual" descripcion="Mann-Kendall con pendiente de Sen sobre eventos por mes">
+              {zona === null ? (
+                <EstadoVacio titulo="Elige una zona" />
+              ) : (
+                <ContenidoConsulta consulta={frecuencia} esVacio={(f) => f.serieMensual.length === 0}>
+                  {(f) => (
+                    <div className="space-y-3">
+                      <AvisoAgrupada agrupadaEn={f.agrupadaEn} />
+                      <ResumenMannKendall mk={f.mannKendall} />
+                      <SerieMensual serie={f.serieMensual} mannKendall={f.mannKendall} />
+                    </div>
+                  )}
+                </ContenidoConsulta>
+              )}
+            </Tarjeta>
+
+            <Tarjeta titulo="Gutenberg-Richter" descripcion="Frecuencia acumulada por magnitud y magnitud de completitud">
+              {zona === null ? (
+                <EstadoVacio titulo="Elige una zona" />
+              ) : (
+                <ContenidoConsulta consulta={gr} esVacio={(g) => g.puntos.length === 0}>
+                  {(g) => (
+                    <>
+                      <AvisoAgrupada agrupadaEn={g.agrupadaEn} />
+                      <GraficaGutenbergRichter gr={g} />
+                      <p className="mt-2 text-xs text-tinta-tenue">
+                        Tasa anual de eventos M ≥ Mc: {formatearNumero(g.tasaAnual, 1)}. El valor a es anual; la recta se dibuja sobre los
+                        conteos de todo el periodo (a + log₁₀ años).
+                      </p>
+                    </>
+                  )}
+                </ContenidoConsulta>
+              )}
+            </Tarjeta>
+          </div>
+
+          <Tarjeta
+            titulo="Advertencias de actividad"
+            descripcion="Ventana actual comparada con el comportamiento habitual de cada zona (prueba de Poisson)"
+            acciones={
+              <div className="flex items-center gap-2">
+                <label htmlFor={idNivel} className="text-sm text-tinta-secundaria">
+                  Nivel
+                </label>
+                <Selector id={idNivel} value={nivel} onChange={(e) => setNivel(e.target.value as NivelAdvertencia | '')} className="w-36">
+                  <option value="">Todos</option>
+                  {NIVELES_ADVERTENCIA.map((n) => (
+                    <option key={n} value={n}>
+                      {estiloNivelAdvertencia(n).etiqueta}
+                    </option>
+                  ))}
+                </Selector>
+              </div>
+            }
+          >
+            <ContenidoConsulta
+              consulta={advertencias}
+              esVacio={(a) => a.datos.length === 0}
+              vacio={<EstadoVacio titulo="No hay advertencias para este filtro" />}
+            >
+              {(a) => (
+                <div className="overflow-x-auto">
+                  <table className="tabla min-w-[48rem]">
+                    <thead>
+                      <tr>
+                        <th scope="col">Zona</th>
+                        <th scope="col">Nivel</th>
+                        <th scope="col">Ventana</th>
+                        <th scope="col" className="text-right">
+                          Observados
+                        </th>
+                        <th scope="col" className="text-right">
+                          Esperados
+                        </th>
+                        <th scope="col" className="text-right">
+                          p-valor
+                        </th>
+                        <th scope="col">Emitida</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...a.datos]
+                        .sort((x, y) => NIVELES_ADVERTENCIA.indexOf(y.nivel) - NIVELES_ADVERTENCIA.indexOf(x.nivel))
+                        .map((adv) => (
+                          <tr key={adv.idAdvertencia} className={adv.zona === zona ? 'bg-primario-claro' : undefined}>
+                            <td className="font-medium">{adv.zona}</td>
+                            <td>
+                              <InsigniaEstado estilo={estiloNivelAdvertencia(adv.nivel)} />
+                            </td>
+                            <td className="whitespace-nowrap">
+                              {formatearFecha(adv.ventanaInicio)} – {formatearFecha(adv.ventanaFin)}
+                            </td>
+                            <td className="text-right tabular-nums">{formatearNumero(adv.eventosObservados)}</td>
+                            <td className="text-right tabular-nums">{formatearNumero(adv.eventosEsperados, 1)}</td>
+                            <td className="text-right tabular-nums">{formatearPValor(adv.pValor)}</td>
+                            <td className="whitespace-nowrap">{formatearFechaHora(adv.fechaEmision)}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </ContenidoConsulta>
-          )}
-        </Tarjeta>
+          </Tarjeta>
 
-        <Tarjeta titulo="Gutenberg-Richter" descripcion="Frecuencia acumulada por magnitud y magnitud de completitud">
-          {zona === null ? (
-            <EstadoVacio titulo="Elige una zona" />
-          ) : (
-            <ContenidoConsulta consulta={gr} esVacio={(g) => g.puntos.length === 0}>
-              {(g) => (
+          <Tarjeta
+            titulo="Probabilidad de ocurrencia"
+            descripcion="Probabilidad de al menos un sismo de magnitud igual o mayor (Poisson sobre Gutenberg-Richter)"
+          >
+            <ContenidoConsulta consulta={probabilidades} esVacio={(p) => p.zonas.length === 0}>
+              {(p) => (
                 <>
-                  <AvisoAgrupada agrupadaEn={g.agrupadaEn} />
-                  <GraficaGutenbergRichter gr={g} />
+                  <TablaProbabilidades datos={p} zonaSeleccionada={zona ?? ''} />
                   <p className="mt-2 text-xs text-tinta-tenue">
-                    Tasa anual de eventos M ≥ Mc: {formatearNumero(g.tasaAnual, 1)}. El valor a es anual; la recta se dibuja sobre los
-                    conteos de todo el periodo (a + log₁₀ años).
+                    Calculado el {formatearFechaHora(p.fechaCalculo)} con datos hasta {formatearFecha(p.fechaCorte)}.
                   </p>
                 </>
               )}
             </ContenidoConsulta>
-          )}
-        </Tarjeta>
-      </div>
+          </Tarjeta>
+        </div>
+      )}
 
-      <Tarjeta
-        titulo="Advertencias de actividad"
-        descripcion="Ventana actual comparada con el comportamiento habitual de cada zona (prueba de Poisson)"
-        acciones={
-          <div className="flex items-center gap-2">
-            <label htmlFor={idNivel} className="text-sm text-tinta-secundaria">
-              Nivel
-            </label>
-            <Selector id={idNivel} value={nivel} onChange={(e) => setNivel(e.target.value as NivelAdvertencia | '')} className="w-36">
-              <option value="">Todos</option>
-              {NIVELES_ADVERTENCIA.map((n) => (
-                <option key={n} value={n}>
-                  {estiloNivelAdvertencia(n).etiqueta}
-                </option>
-              ))}
-            </Selector>
-          </div>
-        }
-      >
-        <ContenidoConsulta
-          consulta={advertencias}
-          esVacio={(a) => a.datos.length === 0}
-          vacio={<EstadoVacio titulo="No hay advertencias para este filtro" />}
-        >
-          {(a) => (
-            <div className="overflow-x-auto">
-              <table className="tabla min-w-[48rem]">
-                <thead>
-                  <tr>
-                    <th scope="col">Zona</th>
-                    <th scope="col">Nivel</th>
-                    <th scope="col">Ventana</th>
-                    <th scope="col" className="text-right">
-                      Observados
-                    </th>
-                    <th scope="col" className="text-right">
-                      Esperados
-                    </th>
-                    <th scope="col" className="text-right">
-                      p-valor
-                    </th>
-                    <th scope="col">Emitida</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...a.datos]
-                    .sort((x, y) => NIVELES_ADVERTENCIA.indexOf(y.nivel) - NIVELES_ADVERTENCIA.indexOf(x.nivel))
-                    .map((adv) => (
-                      <tr key={adv.idAdvertencia} className={adv.zona === zona ? 'bg-primario-claro' : undefined}>
-                        <td className="font-medium">{adv.zona}</td>
-                        <td>
-                          <InsigniaEstado estilo={estiloNivelAdvertencia(adv.nivel)} />
-                        </td>
-                        <td className="whitespace-nowrap">
-                          {formatearFecha(adv.ventanaInicio)} – {formatearFecha(adv.ventanaFin)}
-                        </td>
-                        <td className="text-right tabular-nums">{formatearNumero(adv.eventosObservados)}</td>
-                        <td className="text-right tabular-nums">{formatearNumero(adv.eventosEsperados, 1)}</td>
-                        <td className="text-right tabular-nums">{formatearPValor(adv.pValor)}</td>
-                        <td className="whitespace-nowrap">{formatearFechaHora(adv.fechaEmision)}</td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </ContenidoConsulta>
-      </Tarjeta>
-
-      <Tarjeta
-        titulo="Probabilidad de ocurrencia"
-        descripcion="Probabilidad de al menos un sismo de magnitud igual o mayor (Poisson sobre Gutenberg-Richter)"
-      >
-        <ContenidoConsulta consulta={probabilidades} esVacio={(p) => p.zonas.length === 0}>
-          {(p) => (
-            <>
-              <TablaProbabilidades datos={p} zonaSeleccionada={zona ?? ''} />
-              <p className="mt-2 text-xs text-tinta-tenue">
-                Calculado el {formatearFechaHora(p.fechaCalculo)} con datos hasta {formatearFecha(p.fechaCorte)}.
-              </p>
-            </>
-          )}
-        </ContenidoConsulta>
-      </Tarjeta>
-
-      <AvisoAlcance fechaCorte={fechaCorte} />
+      <AvisoAlcance fechaCorte={fechaCorte} texto={aviso} />
     </>
   );
 }

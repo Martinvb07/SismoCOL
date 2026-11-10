@@ -148,6 +148,28 @@ interface Advertencia {
 }
 ```
 
+## Pronóstico de actividad por zona
+
+| Método | Ruta | Rol | Cuerpo / respuesta |
+|---|---|---|---|
+| GET | `/api/analisis/pronostico?zona=` | Usuario | `PronosticoActividad` del último cálculo · `409` si la zona está agrupada o tiene pocos meses. Ver D16 |
+
+```ts
+type ModeloPronostico = 'SARIMA' | 'INGENUO' | 'MEDIA_MOVIL_12';
+interface PuntoPronostico { mes: string /* AAAA-MM */; valor; inferior80; superior80; inferior95; superior95 }
+interface PronosticoActividad {
+  zona; modeloGanador: ModeloPronostico; mc; periodoInicio: string; periodoFin: string; nMeses;
+  parametros: { mc; ordenSarima: number[]; ordenEstacional: number[]; aic: number | null; transformacion; horizonteMeses;
+                horizonteBacktest; minMesesEntrenamiento; catalogo; seleccionOrden };
+  serie: Array<{ mes: string; eventos: number }>;
+  pronostico: PuntoPronostico[];                                  // del modelo ganador
+  pronosticos: Record<ModeloPronostico, PuntoPronostico[]>;
+  backtesting: Array<{ modelo: ModeloPronostico; mae: number | null; mape: number | null; nPronosticos: number;
+                       maePorHorizonte: Record<string, number> }>;  // de menor a mayor MAE
+  fechaCalculo: string;
+}
+```
+
 ## Pronóstico de réplicas
 
 Reasenberg-Jones por sismo principal (M ≥ 6 configurable con `REPLICAS_MAGNITUD_MIN` en Analytics). Ver D15.

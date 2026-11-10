@@ -24,6 +24,7 @@ import type {
   OrdenSismos,
   Paginado,
   Probabilidades,
+  PronosticoActividad,
   RespuestaAdvertencias,
   RespuestaCarga,
   RespuestaEntrenamiento,
@@ -86,6 +87,7 @@ export const apiAnalisis = {
   gutenbergRichter: (zona: string) =>
     peticion<GutenbergRichter>('/api/analisis/gutenberg-richter', { query: { zona } }),
   probabilidades: () => peticion<Probabilidades>('/api/analisis/probabilidades'),
+  pronostico: (zona: string) => peticion<PronosticoActividad>('/api/analisis/pronostico', { query: { zona } }),
   advertencias: (filtro: { zona?: string; nivel?: NivelAdvertencia } = {}) =>
     peticion<RespuestaAdvertencias>('/api/advertencias', { query: filtro }),
   configuracion: () => peticion<ConfiguracionAnalisis>('/api/analisis/configuracion'),
@@ -178,6 +180,7 @@ export const claves = {
   frecuencia: (zona: string) => ['analisis', 'frecuencia', zona] as const,
   gutenbergRichter: (zona: string) => ['analisis', 'gr', zona] as const,
   probabilidades: ['analisis', 'probabilidades'] as const,
+  pronostico: (zona: string) => ['analisis', 'pronostico', zona] as const,
   advertencias: ['advertencias'] as const,
   configuracion: ['analisis', 'configuracion'] as const,
   modelos: ['modelos'] as const,
