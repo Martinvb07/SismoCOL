@@ -99,6 +99,11 @@ class ResolvedorMunicipios:
             ruta.write_bytes(respuesta.content)
         return cls.desde_archivo(ruta)
 
+    @property
+    def tabla(self) -> pd.DataFrame:
+        """codigo, nombre, departamento, latitud, longitud de todos los municipios."""
+        return self._df[["codigo", "nombre", "departamento", "latitud", "longitud"]].copy()
+
     def __len__(self) -> int:
         return len(self._df)
 

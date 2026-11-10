@@ -23,7 +23,7 @@ import type {
 import { FUENTES } from '@/api/tipos';
 import { URL_API } from '@/config';
 import { probabilidadPoisson } from '@/lib/analisis';
-import { detalleReplicas, MAPA_AMENAZA, PERIODOS_RETORNO, PRINCIPALES_REPLICAS, pronosticoActividad } from './pronosticos';
+import { detalleReplicas, escenarioSimulado, MAPA_AMENAZA, REPORTE_MODELO_V2, PERIODOS_RETORNO, PRINCIPALES_REPLICAS, pronosticoActividad } from './pronosticos';
 import { calcularEstadisticas, calcularFrecuencia, calcularGR, filtrarSismos } from './calculos';
 import {
   ADVERTENCIAS,
@@ -372,7 +372,31 @@ export const handlers = [
       probabilidad: probabilidades[nivelImpacto],
       probabilidades,
       modelo: { idModelo: activo.idModelo, version: activo.version, algoritmo: activo.algoritmo },
+      municipio: { codigo: '27660', nombre: 'San José del Palmar', departamento: 'Chocó', distanciaKm: 4.2 },
+      intensidadMmi: Number((intensidad + 0.6).toFixed(2)),
+      distanciaHipocentralKm: c.profundidadKm,
+      explicacion: [
+        { variable: 'mmi', etiqueta: 'Intensidad estimada (MMI)', valor: intensidad + 0.6, contribucion: 0.42 },
+        { variable: 'log_poblacion', etiqueta: 'Población (log10)', valor: 4.3, contribucion: 0.11 },
+        { variable: 'pct_paredes_inadecuadas', etiqueta: 'Hogares con paredes inadecuadas (%)', valor: 22, contribucion: -0.05 },
+      ],
     });
+  }),
+
+  http.post(ruta('/api/escenarios'), async ({ request }) => {
+    const u = autorizar(request);
+    if (u instanceof Response) return u;
+    await delay(LATENCIA_MS * 2);
+    const c = (await request.json()) as CuerpoPrediccion;
+    if (!modelos.some((m) => m.activo)) return error(503, 'No hay un modelo de impacto activo.');
+    return HttpResponse.json(escenarioSimulado(c));
+  }),
+
+  http.get(ruta('/api/modelos/:id/reporte'), ({ request, params }) => {
+    const u = autorizar(request, 'ADMIN');
+    if (u instanceof Response) return u;
+    const m = modelos.find((x) => x.idModelo === Number(params.id));
+    return m ? HttpResponse.json({ modelo: m, reporte: REPORTE_MODELO_V2 }) : error(404, 'El modelo no existe');
   }),
 
   http.get(ruta('/api/modelos'), ({ request }) => {

@@ -7,6 +7,7 @@ import { Alerta, Boton, Giro, Insignia } from '@/componentes/ui/Basicos';
 import { ContenidoConsulta, EstadoVacio } from '@/componentes/ui/Estados';
 import { estiloNivelImpacto } from '@/lib/escalasColor';
 import { formatearEntero, formatearFechaHora, formatearNumero } from '@/lib/formato';
+import { ReporteModelo } from './ReporteModelo';
 
 const SEGUNDO_MS = 1000;
 const COLOR_BARRA = '#1f8fa6';
@@ -160,8 +161,9 @@ export function Entrenamiento() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-tinta-secundaria">
-        Entrena árbol de decisión, Random Forest y regresión logística con validación cruzada estratificada y guarda el mejor por F1
-        macro como una versión nueva (inactiva). Puede tardar unos 2 minutos.
+        Compara el Random Forest actual (4 variables), Random Forest y LightGBM con las variables nuevas (intensidad estimada, distancia,
+        población y vulnerabilidad de vivienda) y un modelo ordinal, con validación cruzada estratificada de 5 pliegues. El mejor se calibra
+        y se guarda como versión nueva; solo se activa si supera en F1 macro al modelo vigente. Puede tardar unos minutos.
       </p>
       <Boton onClick={() => entrenar.mutate()} cargando={entrenar.isPending}>
         Entrenar modelo
@@ -177,8 +179,10 @@ export function Entrenamiento() {
         <div className="space-y-4">
           <Alerta tipo="exito" titulo={`Modelo ${entrenar.data.modelo.version} entrenado`}>
             {entrenar.data.modelo.algoritmo} · exactitud {formatearNumero(entrenar.data.modelo.exactitud, 2)} · F1 macro{' '}
-            {formatearNumero(entrenar.data.modelo.f1Macro, 2)}. Actívalo en la tabla de versiones para usarlo en las predicciones.
+            {formatearNumero(entrenar.data.modelo.f1Macro, 2)}.{' '}
+            {entrenar.data.modelo.activo ? 'Quedó activo.' : 'Quedó inactivo; puedes activarlo en la tabla de versiones.'}
           </Alerta>
+          {entrenar.data.reporte.elegido && <ReporteModelo reporte={entrenar.data.reporte} />}
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <div>
               <h3 className="mb-2 text-sm font-semibold">Comparación de algoritmos</h3>
@@ -196,6 +200,39 @@ export function Entrenamiento() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Reporte de validación y explicabilidad del modelo activo (vista del administrador). */
+export function ReporteModeloActivo() {
+  const modelos = useQuery({ queryKey: claves.modelos, queryFn: apiModelos.listar });
+  const activo = modelos.data?.find((m) => m.activo) ?? null;
+  const reporte = useQuery({
+    queryKey: claves.reporteModelo(activo?.idModelo ?? 0),
+    queryFn: () => apiModelos.reporte(activo?.idModelo ?? 0),
+    enabled: activo !== null,
+  });
+  if (modelos.isPending) return null;
+  if (!activo) return <EstadoVacio titulo="No hay un modelo activo" />;
+  return (
+    <ContenidoConsulta consulta={reporte}>
+      {(r) =>
+        r.reporte?.elegido ? (
+          <div className="space-y-4">
+            <p className="text-sm text-tinta-secundaria">
+              Modelo {r.modelo.version} · {r.modelo.algoritmo} · entrenado el {formatearFechaHora(r.modelo.fechaEntrenamiento)}
+            </p>
+            <ReporteModelo reporte={r.reporte} />
+            <div>
+              <h3 className="mb-2 text-sm font-semibold">Matriz de confusión del modelo desplegado (fuera de pliegue)</h3>
+              <MatrizConfusion reporte={r.reporte} />
+            </div>
+          </div>
+        ) : (
+          <EstadoVacio titulo={`El modelo ${r.modelo.version} es anterior a la fase 5`}>Entrena una versión nueva para ver su validación y SHAP.</EstadoVacio>
+        )
+      }
+    </ContenidoConsulta>
   );
 }
 

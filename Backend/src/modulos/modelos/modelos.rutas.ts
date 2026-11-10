@@ -43,6 +43,20 @@ interface RespuestaInferencia {
   probabilidad: number;
   probabilidades: Record<NivelImpacto, number>;
   modelo: { idModelo: number; version: string; algoritmo: string };
+  /** Modelos con variables nuevas (D18): municipio evaluado, intensidad y explicación SHAP. */
+  municipio?: { codigo: string; nombre: string; departamento: string; distanciaKm: number };
+  intensidadMmi?: number;
+  distanciaHipocentralKm?: number;
+  explicacion?: Array<{ variable: string; etiqueta: string; valor: number; contribucion: number }> | null;
+}
+
+function cuerpoAnalytics(entrada: z.infer<typeof esquemaPrediccion>) {
+  return {
+    magnitud: entrada.magnitud,
+    profundidad_km: entrada.profundidadKm,
+    latitud: entrada.latitud,
+    longitud: entrada.longitud,
+  };
 }
 
 const soloAdmins = [autenticar, soloAdmin];
@@ -78,13 +92,8 @@ rutasModelos.post('/predicciones', autenticar, validarCuerpo(esquemaPrediccion),
   const entrada = req.body as z.infer<typeof esquemaPrediccion>;
   const inferencia = await llamarAnalytics<RespuestaInferencia>('/modelos/predecir', {
     metodo: 'POST',
-    cuerpo: {
-      magnitud: entrada.magnitud,
-      profundidad_km: entrada.profundidadKm,
-      latitud: entrada.latitud,
-      longitud: entrada.longitud,
-    },
-    timeoutMs: 30_000,
+    cuerpo: cuerpoAnalytics(entrada),
+    timeoutMs: 60_000,
   });
   const [prediccion, modelo] = await Promise.all([
     prisma.prediccion.create({
@@ -111,5 +120,21 @@ rutasModelos.post('/predicciones', autenticar, validarCuerpo(esquemaPrediccion),
     probabilidad: inferencia.probabilidad,
     probabilidades: inferencia.probabilidades,
     modelo: { ...inferencia.modelo, fechaEntrenamiento: modelo.fechaEntrenamiento.toISOString() },
+    municipio: inferencia.municipio ?? null,
+    intensidadMmi: inferencia.intensidadMmi ?? null,
+    distanciaHipocentralKm: inferencia.distanciaHipocentralKm ?? null,
+    explicacion: inferencia.explicacion ?? null,
   });
+});
+
+/** Simulador de escenarios: intensidad y nivel de impacto en todos los municipios cercanos (D18). No se guarda. */
+rutasModelos.post('/escenarios', autenticar, validarCuerpo(esquemaPrediccion), async (req, res) => {
+  const entrada = req.body as z.infer<typeof esquemaPrediccion>;
+  res.json(await llamarAnalytics('/modelos/escenario', { metodo: 'POST', cuerpo: cuerpoAnalytics(entrada), timeoutMs: 60_000 }));
+});
+
+/** Reporte completo de un entrenamiento: comparación, calibración, confiabilidad, SHAP y activación. */
+rutasModelos.get('/modelos/:id/reporte', ...soloAdmins, async (req, res) => {
+  const { id } = esquemaId.parse(req.params);
+  res.json(await llamarAnalytics(`/modelos/${id}/reporte`));
 });

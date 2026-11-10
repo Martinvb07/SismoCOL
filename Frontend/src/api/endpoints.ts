@@ -28,6 +28,7 @@ import type {
   RespuestaAdvertencias,
   RespuestaCarga,
   RespuestaEntrenamiento,
+  RespuestaEscenario,
   RespuestaLogin,
   RespuestaMapaAmenaza,
   RespuestaPeriodosRetorno,
@@ -130,6 +131,9 @@ export const apiModelos = {
       metodo: 'POST',
       tiempoEsperaMs: TIEMPO_ESPERA_ENTRENAMIENTO_MS,
     }),
+  escenario: (cuerpo: CuerpoPrediccion) =>
+    peticion<RespuestaEscenario>('/api/escenarios', { metodo: 'POST', cuerpo, tiempoEsperaMs: TIEMPO_ESPERA_ENTRENAMIENTO_MS }),
+  reporte: (idModelo: number) => peticion<RespuestaEntrenamiento>(`/api/modelos/${idModelo}/reporte`),
   activar: (idModelo: number) =>
     peticion<ModeloPredictivo>(`/api/modelos/${idModelo}/activar`, { metodo: 'PATCH' }),
 };
@@ -192,6 +196,7 @@ export const claves = {
   advertencias: ['advertencias'] as const,
   configuracion: ['analisis', 'configuracion'] as const,
   modelos: ['modelos'] as const,
+  reporteModelo: (idModelo: number) => ['modelos', 'reporte', idModelo] as const,
   replicas: ['replicas'] as const,
   periodosRetorno: ['amenaza', 'periodos'] as const,
   mapaAmenaza: ['amenaza', 'mapa'] as const,

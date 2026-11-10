@@ -210,12 +210,25 @@ class EntradaPrediccion(BaseModel):
 
 @app.post("/modelos/entrenar", status_code=201)
 def entrenar(_: Protegido, cfg: Config) -> dict[str, object]:
-    return modelo.entrenar(cfg.database_url)
+    return modelo.entrenar(cfg, servicio.resolvedor(cfg))
+
+
+@app.get("/modelos/{id_modelo}/reporte")
+def reporte_modelo(_: Protegido, cfg: Config, id_modelo: int) -> dict[str, object]:
+    return modelo.reporte_modelo(cfg.database_url, id_modelo)
 
 
 @app.post("/modelos/predecir")
 def predecir(_: Protegido, cfg: Config, entrada: EntradaPrediccion) -> dict[str, object]:
-    return modelo.predecir(cfg.database_url, entrada.magnitud, entrada.profundidad_km, entrada.latitud, entrada.longitud)
+    return modelo.predecir(cfg, servicio.resolvedor(cfg), entrada.magnitud, entrada.profundidad_km,
+                           entrada.latitud, entrada.longitud)
+
+
+@app.post("/modelos/escenario")
+def escenario(_: Protegido, cfg: Config, entrada: EntradaPrediccion) -> dict[str, object]:
+    """Simulador: intensidad y nivel de impacto en todos los municipios cercanos (D18)."""
+    return modelo.escenario(cfg, servicio.resolvedor(cfg), entrada.magnitud, entrada.profundidad_km,
+                            entrada.latitud, entrada.longitud)
 
 
 # ─── Pronóstico de réplicas (analítica, fase 2) ─────────────────────────────

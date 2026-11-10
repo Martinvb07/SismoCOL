@@ -195,6 +195,10 @@ model ModeloPredictivo {
   f1Macro             Decimal  @map("f1_macro") @db.Decimal(5, 4)
   activo              Boolean  @default(false)
   fechaEntrenamiento  DateTime @default(now()) @map("fecha_entrenamiento") @db.DateTime(0)
+  /// Variables del modelo (D18). Nulo en los modelos anteriores (4 variables).
+  caracteristicas     Json?
+  /// Comparación con validación cruzada, calibración, confiabilidad, SHAP global y regla de activación.
+  reporte             Json?
 
   predicciones Prediccion[]
 

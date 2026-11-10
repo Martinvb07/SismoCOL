@@ -113,3 +113,41 @@ Se calculan con el catálogo histórico `USGS_HIST` (D14), no con el SGC, cuyo p
   - P(M ≥ 5 en 10 años) por celda.
 - **Mezcla de magnitudes:** las magnitudes son heterogéneas (sobre todo mb, que se satura cerca de M 6), así que las tasas de M 6–7 dependen de la extrapolación de Gutenberg-Richter.
 - **Alcance:** son tasas medias de largo plazo, no pronósticos de fecha ni de lugar, y no reemplazan el Estudio General de Amenaza Sísmica del SGC.
+
+## D18 — Modelo de impacto con intensidad, población y vulnerabilidad (2026-11-10)
+Reemplaza en parte a D7 (construcción de los ejemplos) y amplía las variables del modelo de impacto.
+- **Epicentro de los reportes de daño.** Antes, la ubicación de un reporte era el centroide de su municipio y la distancia epicentro-municipio era ≈ 0 en todos los ejemplos. Ahora cada reporte de DesInventar/UNGRD se asocia al sismo instrumental con epicentro (SGC con `EPICENTRO`, USGS o USGS_HIST) que cumpla:
+  - ±1 día del día local del reporte;
+  - ≤ 150 km del municipio;
+  - |ΔM| ≤ 0,6, eligiendo la menor |ΔM| y luego la mayor M.
+
+  Se conservan la magnitud y la profundidad del reporte y se toma el epicentro del sismo. Los reportes sin pareja, como casi todos los anteriores a 1973, usan el centroide y quedan marcados.
+- **SIN_AFECTACION:** se mantiene el total (2 por cada reporte con daño), pero ahora sale de dos fuentes:
+  - la mitad son **controles del mismo evento**: municipios a ≤ 150 km del epicentro de un sismo con reportes que no reportaron daño en ese evento, para que el modelo aprenda la atenuación con la distancia;
+  - el resto son sismos SGC M ≥ 3,5 sin reporte, como en D7.
+
+  Sigue siendo una suposición: la ausencia de reporte no garantiza la ausencia de daño.
+- **Variables nuevas:**
+  - distancia hipocentral entre el epicentro y la cabecera DIVIPOLA;
+  - MMI estimada con Allen, Wald y Worden (2012), versión hipocentral (`sismocol/intensidad.py`, coeficientes de la implementación de referencia de OpenQuake 3.26.2);
+  - log10 de la población municipal 2018 y % urbano (DANE, PPED 2018-2042, año 2018);
+  - % de hogares con carencia por material de paredes (anexo del déficit habitacional CNPV 2018, nueva metodología).
+  - Los municipios sin dato toman la mediana nacional, con aviso.
+  - **Falta la densidad (hab/km²):** el área municipal (MGN del DANE) no se pudo descargar de una fuente accesible y no se inventó. El % urbano la sustituye en parte.
+- **Comparación:** validación cruzada estratificada de 5 pliegues, los mismos para todos, con predicciones fuera de pliegue. Modelos:
+  - Random Forest actual con 4 variables;
+  - Random Forest con las variables nuevas;
+  - LightGBM con las variables nuevas;
+  - un ordinal de Frank y Hall (2001) con LightGBM;
+  - el baseline de clase mayoritaria.
+
+  Métricas: F1 macro, F1 por clase, exactitud, matriz de confusión y Brier multiclase. Las etiquetas se codifican 0–3 en orden de severidad para que la calibración y el ordinal conserven el orden. El mejor por F1 macro se elige con los mismos pliegues; esa selección introduce un leve sesgo optimista.
+- **Calibración:** `CalibratedClassifierCV`, isotónica con ≥ 1 000 ejemplos y sigmoide si hay menos. Se reportan el Brier y las curvas de confiabilidad, uno contra resto por clase, antes y después de calibrar. Se despliega la versión calibrada salvo que su F1 macro caiga más de 0,01, porque con pocos datos la calibración puede cambiar el argmax. La decisión queda en el reporte.
+- **SHAP:** TreeExplainer (Random Forest y LightGBM) o PermutationExplainer (ordinal) sobre el modelo sin calibrar. La importancia global (media de |SHAP|) se muestra al administrador, y la contribución de cada variable a la clase predicha, en cada predicción.
+- **Activación:** el modelo nuevo solo se activa si su F1 macro supera al del modelo vigente reentrenado y evaluado con los mismos pliegues; si no se puede reevaluar, se compara con el F1 registrado. Antes un modelo nuevo solo se activaba solo si no había ninguno activo.
+- **Predicción:** se evalúa en el municipio más cercano al punto. El simulador de escenarios evalúa todos los municipios con MMI ≥ III a ≤ 300 km del epicentro, que es el límite de validez de la ecuación.
+- **Limitaciones:**
+  - La ecuación de intensidad es para corteza activa somera, Mw 5–7,9; aquí se aplica también a sismos intermedios y a magnitudes mezcladas (ML, mb, Mw).
+  - La población es la de 2018 incluso para reportes antiguos.
+  - El indicador de vivienda es por hogares, no por viviendas.
+  - El número de reportes con daño ALTO es pequeño.

@@ -78,6 +78,10 @@ describe('pantallas con datos simulados', () => {
     await usuario.click(screen.getByRole('button', { name: 'Estimar impacto' }));
     expect(await screen.findByText('Nivel de impacto estimado', {}, ESPERA)).toBeInTheDocument();
     expect(screen.getByText(/Modelo v1\.1\.0/)).toBeInTheDocument();
+    expect(screen.getByText('Por qué este nivel (SHAP)')).toBeInTheDocument();
+    await usuario.click(screen.getByRole('button', { name: 'Simular escenario' }));
+    expect(await screen.findByRole('table', { name: /Municipios del escenario/ }, ESPERA)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Mapa del escenario con 12 municipios/ })).toBeInTheDocument();
 
     // Simulación
     await irA(usuario, 'Simulación');
@@ -101,6 +105,8 @@ describe('pantallas con datos simulados', () => {
     await usuario.click(screen.getByRole('button', { name: /Sincronizar catálogo histórico/ }));
     expect(await screen.findByText('USGS FDSN histórico M≥4.5 1973-2026', {}, ESPERA)).toBeInTheDocument();
     expect(await screen.findByText('v1.1.0', {}, ESPERA)).toBeInTheDocument();
+    expect(await screen.findByRole('table', { name: /Importancia global/ }, ESPERA)).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /Comparación de modelos/ })).toBeInTheDocument();
 
     await irA(usuario, 'Configuración del análisis');
     expect(await screen.findByLabelText('Ventana de observación (días)', {}, ESPERA)).toHaveValue(30);

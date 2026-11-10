@@ -5,7 +5,7 @@ import type { RespuestaSincronizacion } from '@/api/tipos';
 import { Alerta, Boton, Tarjeta } from '@/componentes/ui/Basicos';
 import { IconoRecargar } from '@/componentes/ui/Iconos';
 import { CargaArchivo } from './datos/CargaArchivo';
-import { Entrenamiento, VersionesModelo } from './datos/Entrenamiento';
+import { Entrenamiento, ReporteModeloActivo, VersionesModelo } from './datos/Entrenamiento';
 import { EncabezadoCargas, FilaCarga } from './TablaCargas';
 
 interface PropsSincronizacion {
@@ -91,6 +91,12 @@ export default function PaginaAdminDatos() {
       </Tarjeta>
       <Tarjeta titulo="Versiones del modelo" descripcion="Solo una versión está activa; activarla desactiva las demás.">
         <VersionesModelo />
+      </Tarjeta>
+      <Tarjeta
+        titulo="Validación y explicabilidad del modelo activo"
+        descripcion="Comparación con validación cruzada, calibración, curvas de confiabilidad e importancia global de las variables (SHAP)"
+      >
+        <ReporteModeloActivo />
       </Tarjeta>
     </>
   );

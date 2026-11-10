@@ -7,7 +7,9 @@ import type { RespuestaPrediccion } from '@/api/tipos';
 import { Alerta, Boton, Tarjeta } from '@/componentes/ui/Basicos';
 import { AvisoAlcance, EstadoVacio } from '@/componentes/ui/Estados';
 import { Campo, Entrada } from '@/componentes/ui/Formulario';
+import { ContribucionesPrediccion } from '@/graficas/BarrasShap';
 import { BarrasProbabilidad } from '@/graficas/BarrasProbabilidad';
+import { Simulador } from './prediccion/Simulador';
 import { MapaColombia } from '@/graficas/MapaColombia';
 import { estiloNivelImpacto } from '@/lib/escalasColor';
 import { aplicarErroresApi, numeroOpcional } from '@/lib/formularios';
@@ -36,10 +38,27 @@ function Resultado({ r }: { r: RespuestaPrediccion }) {
           Probabilidad de la clase: <strong className="tabular-nums">{formatearPorcentaje(r.probabilidad)}</strong>
         </p>
       </div>
+      {r.municipio && (
+        <p className="text-sm text-tinta-secundaria">
+          Municipio evaluado: <strong>{r.municipio.nombre}</strong> ({r.municipio.departamento}), a {formatearNumero(r.municipio.distanciaKm)} km del
+          punto · intensidad estimada <strong>MMI {formatearNumero(r.intensidadMmi, 1)}</strong> · distancia hipocentral{' '}
+          {formatearNumero(r.distanciaHipocentralKm)} km
+        </p>
+      )}
       <div>
         <h3 className="mb-2 text-sm font-semibold text-tinta">Probabilidad por clase</h3>
         <BarrasProbabilidad probabilidades={r.probabilidades} seleccionada={r.nivelImpacto} />
       </div>
+      {r.explicacion && r.explicacion.length > 0 && (
+        <div>
+          <h3 className="mb-1 text-sm font-semibold text-tinta">Por qué este nivel (SHAP)</h3>
+          <p className="mb-2 text-xs text-tinta-tenue">
+            Contribución de cada variable a la clase «{estilo.etiqueta}»: en rojo empuja hacia esa clase y en azul la aleja. Se calcula sobre el
+            modelo sin calibrar.
+          </p>
+          <ContribucionesPrediccion contribuciones={r.explicacion} />
+        </div>
+      )}
       <p className="text-xs text-tinta-tenue">
         Modelo {r.modelo.version} · {r.modelo.algoritmo} · predicción n.º {formatearNumero(r.idPrediccion)}
       </p>
@@ -67,6 +86,11 @@ export default function PaginaPrediccion() {
   const marcador = Number.isFinite(latitud) && Number.isFinite(longitud) ? { latitud, longitud } : null;
 
   const enviar = handleSubmit((datos) => prediccion.mutate(datos));
+  const magnitud = watch('magnitud');
+  const profundidadKm = watch('profundidadKm');
+  const entradaEscenario = [magnitud, profundidadKm, latitud, longitud].every((v) => Number.isFinite(v))
+    ? { magnitud, profundidadKm, latitud, longitud }
+    : null;
   const numero = { setValueAs: numeroOpcional };
 
   const errorSinModelo = esErrorApi(prediccion.error) && prediccion.error.estado === HTTP_SIN_MODELO;
@@ -155,6 +179,13 @@ export default function PaginaPrediccion() {
           )}
         </Tarjeta>
       </div>
+
+      <Tarjeta
+        titulo="Simulador de escenarios"
+        descripcion="Intensidad estimada y nivel de impacto en todos los municipios cercanos al epicentro del formulario"
+      >
+        <Simulador entrada={entradaEscenario} />
+      </Tarjeta>
 
       <AvisoAlcance />
     </>

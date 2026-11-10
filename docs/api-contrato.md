@@ -227,10 +227,12 @@ interface DetalleReplicas { principal: SismoPrincipal; pronostico: PronosticoRep
 
 | Método | Ruta | Rol | Cuerpo / respuesta |
 |---|---|---|---|
-| POST | `/api/predicciones` | Usuario | Cuerpo `{ magnitud (2–9), profundidadKm (0–700), latitud (−4,3–13,5), longitud (−82–−66,8) }` → `{ idPrediccion, nivelImpacto, probabilidad, probabilidades: Record<NivelImpacto, number>, modelo: { idModelo, version, algoritmo, fechaEntrenamiento } }` · `503` si no hay modelo activo |
+| POST | `/api/predicciones` | Usuario | Cuerpo `{ magnitud (2–9), profundidadKm (0–700), latitud (−4,3–13,5), longitud (−82–−66,8) }` → `{ idPrediccion, nivelImpacto, probabilidad, probabilidades: Record<NivelImpacto, number>, modelo: { idModelo, version, algoritmo, fechaEntrenamiento }, municipio: { codigo, nombre, departamento, distanciaKm } \| null, intensidadMmi: number \| null, distanciaHipocentralKm: number \| null, explicacion: Array<{ variable, etiqueta, valor, contribucion }> \| null }` (los campos nuevos son `null` con modelos anteriores a D18) · `503` si no hay modelo activo |
 | GET | `/api/modelos` | Admin | `ModeloPredictivo[]` |
 | POST | `/api/modelos/entrenar` | Admin | `201 { modelo: ModeloPredictivo, reporte: { clases: NivelImpacto[]; matrizConfusion: number[][]; porClase: Record<NivelImpacto, { precision; recall; f1; soporte }>; comparacion: Array<{ algoritmo; f1Macro }> } }`. Puede tardar hasta unos 2 minutos |
 | PATCH | `/api/modelos/:id/activar` | Admin | `ModeloPredictivo`. Desactiva los demás |
+| GET | `/api/modelos/:id/reporte` | Admin | `{ modelo: ModeloPredictivo, reporte: ReporteEntrenamiento }`. Los modelos v2 (D18) traen además `validacion`, `elegido`, `caracteristicas`, `sinCalibrar`, `calibracion` (con `metodo`), `desplegado`, `criterioDespliegue`, `confiabilidad` (`{ sinCalibrar, calibrado }` con `Array<{ predicha, observada }>` por clase), `shap` (`{ metodo, salida, muestra, importancia: Array<{ variable, etiqueta, media, porClase }> }`), `activacion` (`{ regla, vigente, comparadoCon, f1MacroNuevo, activado }`), `composicion`, `ejemplos`, `reportes`, `reportesConEpicentro` y `avisosDatos`; cada entrada de `comparacion` trae `exactitud`, `brier` y `porClase` |
+| POST | `/api/escenarios` | Usuario | Mismo cuerpo que `/api/predicciones` → `{ entrada, criterio, ecuacionIntensidad, modelo, modeloUsaDistancia: boolean, municipios: Array<{ codigo; municipio; departamento; latitud; longitud; distanciaHipocentralKm; intensidadMmi; nivelImpacto; probabilidad; probabilidades; poblacion: number \| null }> }` (municipios con MMI ≥ III a ≤ 300 km, ordenados por nivel). No se guarda |
 
 ## Simulación y ESP32
 

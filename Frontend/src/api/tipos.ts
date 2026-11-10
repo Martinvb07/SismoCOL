@@ -292,12 +292,49 @@ export interface CuerpoPrediccion {
   longitud: number;
 }
 
+export interface ContribucionShap {
+  variable: string;
+  etiqueta: string;
+  valor: number;
+  /** Contribución SHAP a la clase predicha (modelo sin calibrar). */
+  contribucion: number;
+}
+
 export interface RespuestaPrediccion {
   idPrediccion: number;
   nivelImpacto: NivelImpacto;
   probabilidad: number;
   probabilidades: Record<NivelImpacto, number>;
   modelo: { idModelo: number; version: string; algoritmo: string };
+  /** Solo con modelos de variables nuevas (D18); null con los anteriores. */
+  municipio?: { codigo: string; nombre: string; departamento: string; distanciaKm: number } | null;
+  intensidadMmi?: number | null;
+  distanciaHipocentralKm?: number | null;
+  explicacion?: ContribucionShap[] | null;
+}
+
+export interface MunicipioEscenario {
+  codigo: string;
+  municipio: string;
+  departamento: string;
+  latitud: number;
+  longitud: number;
+  distanciaHipocentralKm: number;
+  intensidadMmi: number;
+  nivelImpacto: NivelImpacto;
+  probabilidad: number;
+  probabilidades: Record<NivelImpacto, number>;
+  poblacion: number | null;
+}
+
+export interface RespuestaEscenario {
+  entrada: { magnitud: number; profundidadKm: number; latitud: number; longitud: number };
+  criterio: string;
+  ecuacionIntensidad: string;
+  modelo: { idModelo: number; version: string; algoritmo: string };
+  /** false si el modelo activo no usa la distancia: todos los municipios recibirían casi el mismo nivel. */
+  modeloUsaDistancia: boolean;
+  municipios: MunicipioEscenario[];
 }
 
 export interface MetricasClase {
@@ -307,11 +344,53 @@ export interface MetricasClase {
   soporte: number;
 }
 
+export interface MetricasModelo {
+  f1Macro: number;
+  exactitud: number;
+  brier: number;
+  matrizConfusion?: number[][];
+  porClase: Record<NivelImpacto, MetricasClase>;
+}
+
+export interface PuntoConfiabilidad {
+  predicha: number;
+  observada: number;
+}
+
+export interface ImportanciaShap {
+  variable: string;
+  etiqueta: string;
+  media: number;
+  porClase: Partial<Record<NivelImpacto, number>>;
+}
+
 export interface ReporteEntrenamiento {
   clases: NivelImpacto[];
   matrizConfusion: number[][];
   porClase: Record<NivelImpacto, MetricasClase>;
-  comparacion: Array<{ algoritmo: string; f1Macro: number }>;
+  /** En los modelos v2 cada entrada trae además exactitud, Brier, F1 por clase y variables. */
+  comparacion: Array<{ algoritmo: string; f1Macro: number } & Partial<MetricasModelo> & { caracteristicas?: string[] }>;
+  validacion?: string;
+  elegido?: string;
+  caracteristicas?: string[];
+  sinCalibrar?: MetricasModelo;
+  calibracion?: MetricasModelo & { metodo: string };
+  desplegado?: 'calibrado' | 'sin calibrar';
+  criterioDespliegue?: string;
+  confiabilidad?: { sinCalibrar: Partial<Record<NivelImpacto, PuntoConfiabilidad[]>>; calibrado: Partial<Record<NivelImpacto, PuntoConfiabilidad[]>> };
+  shap?: { metodo: string; salida: string; muestra: number; importancia: ImportanciaShap[] } | null;
+  activacion?: {
+    regla: string;
+    vigente: { version: string; algoritmo: string; f1Macro: number | null; f1MacroRegistrado: number } | null;
+    comparadoCon?: string;
+    f1MacroNuevo: number;
+    activado: boolean;
+  };
+  composicion?: Record<string, Partial<Record<NivelImpacto, number>>>;
+  ejemplos?: number;
+  reportes?: number;
+  reportesConEpicentro?: number;
+  avisosDatos?: string[];
 }
 
 export interface RespuestaEntrenamiento {

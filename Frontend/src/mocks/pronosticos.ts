@@ -4,6 +4,9 @@
  */
 import type {
   CabeceraAmenaza,
+  MunicipioEscenario,
+  ReporteEntrenamiento,
+  RespuestaEscenario,
   DetalleReplicas,
   RespuestaMapaAmenaza,
   RespuestaPeriodosRetorno,
@@ -274,3 +277,93 @@ export const MAPA_AMENAZA: RespuestaMapaAmenaza = {
     return { latitud, longitud, eventos: Math.round(intensidad * 5), tasaM5: tasa, probabilidad10a: 1 - Math.exp(-tasa * 10) };
   }),
 };
+
+/* ---------- Modelo de impacto v2 (simulado) ---------- */
+
+const POR_CLASE_SIMULADO = {
+  SIN_AFECTACION: { precision: 0.85, recall: 0.82, f1: 0.83, soporte: 700 },
+  BAJO: { precision: 0.52, recall: 0.55, f1: 0.53, soporte: 220 },
+  MODERADO: { precision: 0.45, recall: 0.43, f1: 0.44, soporte: 80 },
+  ALTO: { precision: 0.4, recall: 0.38, f1: 0.39, soporte: 40 },
+};
+
+export const REPORTE_MODELO_V2: ReporteEntrenamiento = {
+  clases: ['SIN_AFECTACION', 'BAJO', 'MODERADO', 'ALTO'],
+  matrizConfusion: [
+    [574, 100, 20, 6],
+    [80, 121, 15, 4],
+    [10, 30, 34, 6],
+    [2, 8, 15, 15],
+  ],
+  porClase: POR_CLASE_SIMULADO,
+  validacion: 'Validación cruzada estratificada de 5 pliegues (predicciones fuera de pliegue)',
+  comparacion: [
+    { algoritmo: 'Random Forest (actual, 4 variables)', f1Macro: 0.5, exactitud: 0.66, brier: 0.48, porClase: POR_CLASE_SIMULADO },
+    { algoritmo: 'Random Forest + variables nuevas', f1Macro: 0.55, exactitud: 0.7, brier: 0.44, porClase: POR_CLASE_SIMULADO },
+    { algoritmo: 'LightGBM + variables nuevas', f1Macro: 0.56, exactitud: 0.71, brier: 0.43, porClase: POR_CLASE_SIMULADO },
+    { algoritmo: 'Ordinal Frank-Hall (LightGBM)', f1Macro: 0.54, exactitud: 0.7, brier: 0.44, porClase: POR_CLASE_SIMULADO },
+    { algoritmo: 'Baseline (clase mayoritaria)', f1Macro: 0.2, exactitud: 0.67, brier: 0.5, porClase: POR_CLASE_SIMULADO },
+  ],
+  elegido: 'LightGBM + variables nuevas',
+  sinCalibrar: { f1Macro: 0.56, exactitud: 0.71, brier: 0.43, porClase: POR_CLASE_SIMULADO },
+  calibracion: { metodo: 'isotonic', f1Macro: 0.56, exactitud: 0.72, brier: 0.4, porClase: POR_CLASE_SIMULADO },
+  desplegado: 'calibrado',
+  criterioDespliegue: 'Calibrado salvo que su F1 macro caiga más de 0.01 frente al modelo sin calibrar',
+  confiabilidad: {
+    sinCalibrar: { ALTO: [{ predicha: 0.1, observada: 0.05 }, { predicha: 0.5, observada: 0.3 }, { predicha: 0.8, observada: 0.6 }] },
+    calibrado: { ALTO: [{ predicha: 0.1, observada: 0.09 }, { predicha: 0.5, observada: 0.47 }, { predicha: 0.8, observada: 0.77 }] },
+  },
+  shap: {
+    metodo: 'TreeExplainer',
+    salida: 'log-odds',
+    muestra: 300,
+    importancia: [
+      { variable: 'mmi', etiqueta: 'Intensidad estimada (MMI)', media: 0.8, porClase: {} },
+      { variable: 'log_poblacion', etiqueta: 'Población (log10)', media: 0.4, porClase: {} },
+      { variable: 'magnitud', etiqueta: 'Magnitud', media: 0.3, porClase: {} },
+    ],
+  },
+  activacion: {
+    regla: 'Se activa solo si su F1 macro supera al del modelo vigente con los mismos pliegues',
+    vigente: { version: 'v1.1.0', algoritmo: 'Random Forest', f1Macro: 0.5, f1MacroRegistrado: 0.6 },
+    comparadoCon: 'mismos pliegues',
+    f1MacroNuevo: 0.56,
+    activado: true,
+  },
+  composicion: { REPORTE: { BAJO: 220, MODERADO: 80, ALTO: 40, SIN_AFECTACION: 20 }, CONTROL_MISMO_EVENTO: { SIN_AFECTACION: 340 } },
+  ejemplos: 1040,
+  reportes: 360,
+  reportesConEpicentro: 210,
+  avisosDatos: ['Densidad de población no incluida: el área municipal (MGN del DANE) no se pudo descargar.'],
+};
+
+export function escenarioSimulado(e: { magnitud: number; profundidadKm: number; latitud: number; longitud: number }): RespuestaEscenario {
+  const municipios: MunicipioEscenario[] = Array.from({ length: 12 }, (_, i) => {
+    const latitud = e.latitud + Math.cos(i) * 0.15 * (1 + (i % 4));
+    const longitud = e.longitud + Math.sin(i) * 0.15 * (1 + (i % 4));
+    const distancia = Math.hypot((latitud - e.latitud) * 111, (longitud - e.longitud) * 111, e.profundidadKm);
+    const mmi = Math.max(3, 2 + 1.4 * e.magnitud - 1.4 * Math.log(Math.max(distancia, 10)));
+    const nivel = mmi >= 7 ? 'ALTO' : mmi >= 6 ? 'MODERADO' : mmi >= 5 ? 'BAJO' : 'SIN_AFECTACION';
+    return {
+      codigo: String(10000 + i),
+      municipio: `Municipio ${i + 1}`,
+      departamento: 'Simulado',
+      latitud,
+      longitud,
+      distanciaHipocentralKm: Number(distancia.toFixed(1)),
+      intensidadMmi: Number(mmi.toFixed(2)),
+      nivelImpacto: nivel,
+      probabilidad: 0.6,
+      probabilidades: { SIN_AFECTACION: 0.1, BAJO: 0.1, MODERADO: 0.2, ALTO: nivel === 'ALTO' ? 0.6 : 0.1 },
+      poblacion: 10000 + i * 1000,
+    };
+  });
+  return {
+    entrada: e,
+    criterio: 'Municipios con MMI estimada ≥ 3 a ≤ 300 km del epicentro',
+    ecuacionIntensidad: 'Allen, Wald y Worden (2012), distancia hipocentral',
+    modelo: { idModelo: 2, version: 'v1.1.0', algoritmo: 'LightGBM + variables nuevas' },
+    modeloUsaDistancia: true,
+    municipios,
+  };
+}
