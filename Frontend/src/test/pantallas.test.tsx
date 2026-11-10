@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { Rutas } from '@/App';
-import { AVISO_ALCANCE } from '@/config';
+import { AVISO_ALCANCE, AVISO_PRONOSTICO } from '@/config';
 import { handlers } from '@/mocks/handlers';
 import { handlerGeojson, renderConProveedores } from './utilidades';
 
@@ -57,6 +57,14 @@ describe('pantallas con datos simulados', () => {
     expect(await screen.findByText(/log₁₀ N =/, {}, ESPERA)).toBeInTheDocument();
     expect((await screen.findAllByText(/Datos hasta/, {}, ESPERA)).length).toBeGreaterThan(0);
     expect(await screen.findByText('Nido de Bucaramanga', { selector: 'td' }, ESPERA)).toBeInTheDocument();
+
+    // Pronóstico de réplicas
+    await irA(usuario, 'Pronóstico de réplicas');
+    expect(screen.getAllByText(AVISO_PRONOSTICO).length).toBeGreaterThan(0);
+    expect(await screen.findByRole('table', { name: /Probabilidad de al menos una réplica/ }, ESPERA)).toBeInTheDocument();
+    expect((await screen.findAllByRole('img', { name: /Réplicas acumuladas/ }, ESPERA)).length).toBe(2);
+    expect(screen.getByText('Modelo ajustado')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ejecutar validación/ })).not.toBeInTheDocument();
 
     // Predicción
     await irA(usuario, 'Predicción de impacto');

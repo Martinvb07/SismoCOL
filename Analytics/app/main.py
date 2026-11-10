@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel, Field
 
-from sismocol import analisis, db, modelo, servicio
+from sismocol import analisis, db, modelo, replicas, servicio
 from sismocol.config import Ajustes, ajustes
 from sismocol.ingest import FUENTES, ErrorIngesta
 
@@ -87,6 +87,11 @@ async def manejar_datos_insuficientes(_, error: modelo.DatosInsuficientes) -> JS
 @app.exception_handler(modelo.SinModeloActivo)
 async def manejar_sin_modelo(_, error: modelo.SinModeloActivo) -> JSONResponse:
     return JSONResponse(status_code=503, content={"error": str(error)})
+
+
+@app.exception_handler(replicas.SinPrincipal)
+async def manejar_sin_principal(_, error: replicas.SinPrincipal) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"error": str(error)})
 
 
 @app.exception_handler(ErrorIngesta)
@@ -199,3 +204,25 @@ def entrenar(_: Protegido, cfg: Config) -> dict[str, object]:
 @app.post("/modelos/predecir")
 def predecir(_: Protegido, cfg: Config, entrada: EntradaPrediccion) -> dict[str, object]:
     return modelo.predecir(cfg.database_url, entrada.magnitud, entrada.profundidad_km, entrada.latitud, entrada.longitud)
+
+
+# ─── Pronóstico de réplicas (analítica, fase 2) ─────────────────────────────
+
+@app.get("/replicas")
+def principales_replicas(_: Protegido, cfg: Config) -> list[dict[str, object]]:
+    return replicas.lista_principales(cfg.database_url)
+
+
+@app.get("/replicas/{id_sismo}")
+def detalle_replicas(_: Protegido, cfg: Config, id_sismo: int) -> dict[str, object]:
+    return replicas.detalle(cfg.database_url, id_sismo)
+
+
+@app.post("/replicas/recalcular", status_code=201)
+def recalcular_replicas(_: Protegido, cfg: Config) -> dict[str, object]:
+    return replicas.recalcular(cfg.database_url, cfg.replicas_magnitud_min)
+
+
+@app.post("/replicas/{id_sismo}/validar", status_code=201)
+def validar_replicas(_: Protegido, cfg: Config, id_sismo: int) -> dict[str, object]:
+    return replicas.validar_principal(cfg.database_url, id_sismo, cfg.replicas_magnitud_min)

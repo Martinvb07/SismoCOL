@@ -8,6 +8,7 @@ import {
   IconoMapa,
   IconoObjetivo,
   IconoPanel,
+  IconoReplicas,
   IconoUsuarios,
 } from '@/componentes/ui/Iconos';
 
@@ -27,6 +28,7 @@ const SOLO_ADMIN: readonly Rol[] = ['ADMIN'];
 export const RUTAS = {
   consulta: '/consulta',
   analisis: '/analisis',
+  replicas: '/replicas',
   prediccion: '/prediccion',
   simulacion: '/simulacion',
   adminPanel: '/admin',
@@ -49,6 +51,14 @@ export const ITEMS_NAVEGACION: readonly ItemNavegacion[] = [
     titulo: 'Análisis y advertencias',
     descripcion: 'Frecuencia por zona, Gutenberg-Richter, tendencia y advertencias',
     icono: IconoGrafica,
+    roles: TODOS,
+    seccion: 'principal',
+  },
+  {
+    ruta: RUTAS.replicas,
+    titulo: 'Pronóstico de réplicas',
+    descripcion: 'Reasenberg-Jones: probabilidad de réplicas a 24 h, 7 y 30 días, y validación retrospectiva',
+    icono: IconoReplicas,
     roles: TODOS,
     seccion: 'principal',
   },

@@ -369,3 +369,116 @@ export interface ResumenAdmin {
     usuario: string | null;
   }>;
 }
+
+/* ---------- Pronóstico de réplicas (Reasenberg-Jones) ---------- */
+
+export type MetodoReplicas = 'MAXIMA_VEROSIMILITUD' | 'GENERICO_A_SECUENCIA' | 'GENERICO';
+export type TipoPronosticoReplicas = 'PRONOSTICO' | 'VALIDACION';
+export type Horizonte = '24h' | '7d' | '30d';
+
+export interface SismoPrincipal {
+  idSismo: number;
+  fechaHora: string;
+  magnitud: number;
+  profundidadKm: number | null;
+  latitud: number;
+  longitud: number;
+  municipio: string | null;
+  departamento: string | null;
+  fuente: Fuente;
+}
+
+export interface ResumenPrincipal extends SismoPrincipal {
+  metodo: MetodoReplicas;
+  nReplicas: number;
+  /** P(≥1 réplica M ≥ 4 en los próximos 7 días) del pronóstico vigente. */
+  probabilidad7dM4: number;
+  tieneValidacion: boolean;
+  fechaCalculo: string;
+}
+
+export interface PronosticoMagnitud {
+  magnitud: number;
+  esperado: number;
+  probabilidad: number;
+  ic95: [number, number];
+  /** Solo en la validación retrospectiva. */
+  observado?: number;
+  dentroIc95?: boolean;
+  logVerosimilitud?: number;
+}
+
+export interface HorizonteReplicas {
+  horizonte: Horizonte;
+  dias: number;
+  /** Validación: fracción del horizonte cubierta por los datos (1 = completa). */
+  cobertura?: number;
+  magnitudes: PronosticoMagnitud[];
+}
+
+export interface PuntoCurvaReplicas {
+  dias: number;
+  observado: number | null;
+  esperado: number;
+  inferior: number;
+  superior: number;
+}
+
+export interface ResumenValidacionReplicas {
+  casos: number;
+  fraccionDentroIc95?: number;
+  errorAbsolutoMedio?: number;
+  logVerosimilitudTotal?: number;
+}
+
+export interface ParametrosReplicas {
+  magnitudMinPrincipal: number;
+  ventanaKm: number;
+  ventanaDias: number;
+  fuentes: Fuente[];
+  datosHasta: string;
+  finCatalogoSgc: string | null;
+  nSecuencia: number;
+  modelo: string;
+  bEstimado: boolean;
+  errorB: number | null;
+  avisos: string[];
+}
+
+export interface PronosticoReplicas {
+  idPronostico: number;
+  tipo: TipoPronosticoReplicas;
+  horasAjuste: number | null;
+  inicioAjuste: string;
+  finAjuste: string;
+  metodo: MetodoReplicas;
+  nReplicas: number;
+  mc: number;
+  a: number;
+  b: number;
+  p: number;
+  c: number;
+  parametros: ParametrosReplicas;
+  resultados: {
+    horizontes: HorizonteReplicas[];
+    curva: PuntoCurvaReplicas[];
+    horizontesGenerico?: HorizonteReplicas[];
+    resumen?: ResumenValidacionReplicas;
+    resumenGenerico?: ResumenValidacionReplicas;
+  };
+  fechaCalculo: string;
+}
+
+export interface DetalleReplicas {
+  principal: SismoPrincipal;
+  pronostico: PronosticoReplicas;
+  /** Última validación retrospectiva: una entrada por ventana de ajuste (24 h, 72 h, 7 d). */
+  validacion: PronosticoReplicas[];
+}
+
+export interface RespuestaValidacionReplicas {
+  idSismo: number;
+  resumen: ResumenValidacionReplicas;
+  resumenGenerico: ResumenValidacionReplicas;
+  ventanas: number;
+}

@@ -68,6 +68,17 @@ enum NivelAdvertencia {
   ALTA
 }
 
+enum TipoPronosticoReplicas {
+  PRONOSTICO
+  VALIDACION
+}
+
+enum MetodoAjusteReplicas {
+  MAXIMA_VEROSIMILITUD
+  GENERICO_A_SECUENCIA
+  GENERICO
+}
+
 // ─── Usuarios ───────────────────────────────────────────────────────────────
 
 model Usuario {
@@ -137,6 +148,8 @@ model RegistroSismico {
 
   carga      CargaDatos  @relation(fields: [idCarga], references: [idCarga])
   afectacion Afectacion?
+
+  pronosticosReplicas PronosticoReplicas[]
 
   @@index([fechaHora])
   @@index([departamento, fechaHora])
@@ -294,4 +307,37 @@ model AdvertenciaActividad {
   @@index([zona, fechaEmision])
   @@index([nivel])
   @@map("advertencia_actividad")
+}
+
+// ─── Pronósticos (analítica de resultados futuros) ──────────────────────────
+
+/// Reasenberg-Jones para un sismo principal (D15). PRONOSTICO: ajuste con todos
+/// los datos disponibles y probabilidades desde el último dato. VALIDACION:
+/// ajuste con las primeras horas_ajuste horas y comparación con lo observado.
+model PronosticoReplicas {
+  idPronostico        Int                    @id @default(autoincrement()) @map("id_pronostico")
+  idSismoPrincipal    Int                    @map("id_sismo_principal")
+  tipo                TipoPronosticoReplicas
+  /// Horas de datos usadas en el ajuste (desde el principal).
+  horasAjuste         Decimal?               @map("horas_ajuste") @db.Decimal(9, 2)
+  inicioAjuste        DateTime               @map("inicio_ajuste") @db.DateTime(0)
+  finAjuste           DateTime               @map("fin_ajuste") @db.DateTime(0)
+  metodo              MetodoAjusteReplicas
+  nReplicas           Int                    @map("n_replicas") @db.UnsignedInt
+  magnitudCompletitud Decimal                @map("magnitud_completitud") @db.Decimal(3, 1)
+  valorA              Decimal                @map("valor_a") @db.Decimal(7, 4)
+  valorB              Decimal                @map("valor_b") @db.Decimal(6, 4)
+  valorP              Decimal                @map("valor_p") @db.Decimal(6, 4)
+  valorC              Decimal                @map("valor_c") @db.Decimal(8, 5)
+  /// Configuración, ventana de Gardner-Knopoff, fuentes y periodo de los datos.
+  parametros          Json
+  /// Horizontes (24 h, 7 d, 30 d) por magnitud, curva de decaimiento y métricas de validación.
+  resultados          Json
+  fechaCalculo        DateTime               @default(now()) @map("fecha_calculo") @db.DateTime(0)
+
+  principal RegistroSismico @relation(fields: [idSismoPrincipal], references: [idSismo], onDelete: Cascade)
+
+  @@index([idSismoPrincipal, tipo, fechaCalculo])
+  @@index([fechaCalculo])
+  @@map("pronostico_replicas")
 }

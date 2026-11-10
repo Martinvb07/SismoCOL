@@ -148,6 +148,36 @@ interface Advertencia {
 }
 ```
 
+## Pronóstico de réplicas
+
+Reasenberg-Jones por sismo principal (M ≥ 6 configurable con `REPLICAS_MAGNITUD_MIN` en Analytics). Ver D15.
+
+| Método | Ruta | Rol | Cuerpo / respuesta |
+|---|---|---|---|
+| GET | `/api/replicas` | Usuario | `ResumenPrincipal[]` del último cálculo (más reciente primero) |
+| GET | `/api/replicas/:id` | Usuario | `DetalleReplicas` · `404` si el sismo no tiene pronóstico |
+| POST | `/api/replicas/recalcular` | Admin | `201 { estado: 'listo' \| 'en_curso' \| 'sin_datos', principales?: number }`. También se recalcula después de cada carga o sincronización |
+| POST | `/api/replicas/:id/validar` | Admin | Validación retrospectiva con 24 h, 72 h y 7 días de ajuste → `201 { idSismo, resumen, resumenGenerico, ventanas }` |
+
+```ts
+type MetodoReplicas = 'MAXIMA_VEROSIMILITUD' | 'GENERICO_A_SECUENCIA' | 'GENERICO';
+interface SismoPrincipal { idSismo; fechaHora; magnitud; profundidadKm: number | null; latitud; longitud; municipio: string | null; departamento: string | null; fuente: Fuente }
+interface ResumenPrincipal extends SismoPrincipal { metodo: MetodoReplicas; nReplicas: number; probabilidad7dM4: number; tieneValidacion: boolean; fechaCalculo: string }
+interface PronosticoMagnitud { magnitud; esperado; probabilidad /* P(≥1) */; ic95: [number, number]; observado?; dentroIc95?; logVerosimilitud? }
+interface HorizonteReplicas { horizonte: '24h' | '7d' | '30d'; dias: number; cobertura?: number; magnitudes: PronosticoMagnitud[] }
+interface PronosticoReplicas {
+  idPronostico; tipo: 'PRONOSTICO' | 'VALIDACION'; horasAjuste: number | null; inicioAjuste; finAjuste;
+  metodo: MetodoReplicas; nReplicas; mc; a; b; p; c;
+  parametros: { magnitudMinPrincipal; ventanaKm; ventanaDias; fuentes: Fuente[]; datosHasta; finCatalogoSgc: string | null;
+                nSecuencia; modelo: string; bEstimado: boolean; errorB: number | null; avisos: string[] };
+  resultados: { horizontes: HorizonteReplicas[]; curva: Array<{ dias; observado: number | null; esperado; inferior; superior }>;
+                horizontesGenerico?: HorizonteReplicas[]; resumen?: ResumenValidacion; resumenGenerico?: ResumenValidacion };
+  fechaCalculo: string;
+}
+interface ResumenValidacion { casos: number; fraccionDentroIc95?: number; errorAbsolutoMedio?: number; logVerosimilitudTotal?: number }
+interface DetalleReplicas { principal: SismoPrincipal; pronostico: PronosticoReplicas; validacion: PronosticoReplicas[] }
+```
+
 ## Modelo de impacto
 
 | Método | Ruta | Rol | Cuerpo / respuesta |
@@ -202,3 +232,7 @@ interface ResumenAdmin {
 Toda vista con probabilidades o advertencias muestra este texto:
 
 > Una advertencia indica que la actividad reciente supera estadísticamente el comportamiento habitual de la zona. No es un pronóstico de sismo ni reemplaza los boletines oficiales del SGC.
+
+Las vistas de pronósticos (réplicas, actividad por zona, periodos de retorno, amenaza) muestran este otro (RNF12):
+
+> Este es un pronóstico probabilístico calculado con modelos estadísticos y validado con datos pasados. No predice la fecha, el lugar ni la magnitud de un sismo, y no reemplaza los boletines oficiales del SGC ni las indicaciones de la UNGRD.

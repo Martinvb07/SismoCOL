@@ -1,4 +1,4 @@
-import type { EstadoEnvio, Fuente, PrecisionUbicacion, Rol, TipoActividad } from '@/api/tipos';
+import type { EstadoEnvio, Fuente, MetodoReplicas, PrecisionUbicacion, Rol, TipoActividad } from '@/api/tipos';
 
 export const ETIQUETAS_ROL: Record<Rol, string> = {
   ADMIN: 'Administrador',
@@ -11,6 +11,12 @@ export const ETIQUETAS_FUENTE: Record<Fuente, string> = {
   DESINVENTAR: 'DesInventar',
   USGS: 'USGS',
   USGS_HIST: 'USGS histórico',
+};
+
+export const ETIQUETAS_METODO: Record<MetodoReplicas, string> = {
+  MAXIMA_VEROSIMILITUD: 'Máxima verosimilitud',
+  GENERICO_A_SECUENCIA: 'Genérico con a de la secuencia',
+  GENERICO: 'Genérico (Reasenberg-Jones 1989)',
 };
 
 export const ETIQUETAS_PRECISION: Record<PrecisionUbicacion, string> = {

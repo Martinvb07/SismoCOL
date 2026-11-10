@@ -327,11 +327,25 @@ def recalcular(url: str) -> dict[str, object]:
                 c.execute(insert(t["advertencia_actividad"]).values(
                     id_analisis=id_analisis, fecha_emision=ahora, **_advertencia(cat, info, gr.mc, corte, cfg)))
                 guardadas += 1
+        # Pronósticos derivados del catálogo (fases 2 a 4 de la analítica). Un fallo
+        # en uno no invalida el análisis de frecuencia ya guardado.
+        for nombre, tarea in _tareas_posteriores():
+            try:
+                tarea(url)
+            except Exception:
+                log.exception("Recálculo de %s fallido", nombre)
         segundos = (datetime.now(timezone.utc) - inicio).total_seconds()
         log.info("Recálculo listo: %d zonas, %d réplicas, %.1f s (anios=%.2f)", guardadas, replicas, segundos, anios)
         return {"estado": "listo", "zonas": guardadas, "replicas": replicas, "segundos": round(segundos, 1)}
     finally:
         _recalculo.release()
+
+
+def _tareas_posteriores():
+    from sismocol import replicas
+    from sismocol.config import ajustes
+
+    return [("réplicas", lambda u: replicas.recalcular(u, ajustes().replicas_magnitud_min))]
 
 
 def recalcular_en_segundo_plano(url: str) -> bool:

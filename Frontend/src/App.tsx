@@ -14,6 +14,7 @@ import { PaginaNoEncontrada, PaginaSinPermiso } from './paginas/Errores';
 const PaginaConsulta = lazy(() => import('./paginas/Consulta'));
 const PaginaAnalisis = lazy(() => import('./paginas/Analisis'));
 const PaginaPrediccion = lazy(() => import('./paginas/Prediccion'));
+const PaginaReplicas = lazy(() => import('./paginas/Replicas'));
 const PaginaSimulacion = lazy(() => import('./paginas/Simulacion'));
 const PaginaAdminPanel = lazy(() => import('./paginas/admin/Panel'));
 const PaginaAdminDatos = lazy(() => import('./paginas/admin/DatosModelo'));
@@ -35,6 +36,7 @@ export function Rutas() {
           <Route element={<Layout />}>
             <Route path={RUTAS.consulta} element={<PaginaConsulta />} />
             <Route path={RUTAS.analisis} element={<PaginaAnalisis />} />
+            <Route path={RUTAS.replicas} element={<PaginaReplicas />} />
             <Route path={RUTAS.prediccion} element={<PaginaPrediccion />} />
             <Route path={RUTAS.simulacion} element={<PaginaSimulacion />} />
             <Route path="/sin-permiso" element={<PaginaSinPermiso />} />

@@ -70,3 +70,16 @@ Para las tasas de sismos grandes (periodos de retorno, mapa de amenaza) el catá
 - El rectángulo es algo más amplio que `BBOX_COLOMBIA`; para `USGS_HIST` la marca "fuera de Colombia" usa `BBOX_HISTORICO`.
 - Limitación: las magnitudes son heterogéneas (82 % mb, el resto Mw/Ms/md), así que la completitud y b se estiman con esa mezcla.
 - Se sincroniza desde Admin → Datos y modelo ("Sincronizar catálogo histórico"), con `POST /api/sincronizaciones/usgs-historico` o con `python -m sismocol.comandos usgs-historico [--desde AAAA]`. Es incremental desde el año del último evento y queda registrada en `carga_datos` (`origen = API`).
+
+## D15 — Pronóstico de réplicas con Reasenberg-Jones (2026-11-10)
+Para cada sismo principal con M ≥ 6 (`REPLICAS_MAGNITUD_MIN`) del catálogo instrumental (SGC más USGS posterior al corte, como en D9) se ajusta el modelo de Reasenberg y Jones (1989): λ(t, M) = 10^(a + b(Mm − M)) (t + c)^(−p).
+- **Principales:** se recorren de mayor a menor magnitud. Un sismo dentro de la ventana de Gardner-Knopoff de otro mayor, o su precursor (hasta 1 día antes y dentro de la ventana espacial), no es principal aparte.
+- **Réplicas:** sismos posteriores de magnitud ≤ Mm dentro de la ventana de Gardner-Knopoff. A diferencia de D13, aquí sí entran los sismos con centroide municipal: para M ≥ 6 la ventana espacial mide ≥ 54 km, mucho más que el error del centroide.
+- **Ajuste:** p y c por máxima verosimilitud (proceso de Poisson no homogéneo, Ogata 1983), con K en forma cerrada. b sale por Aki-Utsu si hay ≥ 30 réplicas ≥ Mc. Con 3 a 9 réplicas solo se estima la productividad `a` y se usan b, p y c genéricos (Reasenberg y Jones 1994). Con menos de 3 réplicas se usan los genéricos completos (a = −1,67, b = 0,91, p = 1,08, c = 0,05 días, de California). No hay valores genéricos publicados para Colombia.
+- **Salidas:** P(≥1) y N esperado para M ≥ 4, 5 y 6 en 24 h, 7 d y 30 d desde el último dato. El IC 95 % combina 4 000 simulaciones de los parámetros (covarianza asintótica del MLE y error de b) con la variabilidad de Poisson. La semilla es fija para que el cálculo sea reproducible.
+- **Validación retrospectiva:** se ajusta con las primeras 24 h, 72 h y 7 días y se compara con lo observado después. Se reporta la fracción de casos dentro del IC 95 %, el error absoluto medio y la log-verosimilitud, junto con los mismos valores para los parámetros genéricos como referencia. Si los datos no cubren todo el horizonte, se compara solo la parte cubierta (`cobertura`).
+- **Persistencia:** cada cálculo guarda una fila en `pronostico_replicas` con los parámetros, la ventana, las fuentes y el periodo de los datos.
+- **Limitaciones:**
+  - El catálogo del SGC termina el 26-ago-2026, 16 días después del sismo de Chocó (M 7,4, 10-ago-2026, 116 km de profundidad). Lo posterior viene de USGS M ≥ 2,5, cuya completitud es menor; por eso las ventanas de 30 días mezclan fuentes.
+  - Los sismos de profundidad intermedia suelen tener pocas réplicas.
+  - Un enjambre dentro de la ventana, como el de mediados de septiembre de 2026 cerca de Chocó (≈ 50–70 km de profundidad), no sigue Omori. Cuando p o c llegan a su límite, el ajuste lo advierte.

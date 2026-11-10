@@ -36,6 +36,9 @@ class Ajustes(BaseSettings):
     # Sincronización diaria (antes del recálculo de las 02:15), formato crontab.
     cron_sincronizacion: str = "0 2 * * *"
 
+    # Pronóstico de réplicas (Reasenberg-Jones): magnitud mínima del sismo principal.
+    replicas_magnitud_min: float = Field(default=6.0, ge=4.0, le=9.0)
+
     # Ingesta
     tamano_lote_insercion: int = Field(default=2000, ge=100, le=20000)
     max_mb_archivo: float = Field(default=25, gt=0, le=100)

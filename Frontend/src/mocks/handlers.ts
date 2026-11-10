@@ -23,6 +23,7 @@ import type {
 import { FUENTES } from '@/api/tipos';
 import { URL_API } from '@/config';
 import { probabilidadPoisson } from '@/lib/analisis';
+import { detalleReplicas, PRINCIPALES_REPLICAS } from './pronosticos';
 import { calcularEstadisticas, calcularFrecuencia, calcularGR, filtrarSismos } from './calculos';
 import {
   ADVERTENCIAS,
@@ -209,6 +210,35 @@ export const handlers = [
   }),
 
   /* Análisis */
+  http.get(ruta('/api/replicas'), ({ request }) => {
+    const u = autorizar(request);
+    return u instanceof Response ? u : HttpResponse.json(PRINCIPALES_REPLICAS);
+  }),
+
+  http.get(ruta('/api/replicas/:id'), ({ request, params }) => {
+    const u = autorizar(request);
+    if (u instanceof Response) return u;
+    const detalle = detalleReplicas(Number(params.id));
+    return detalle ? HttpResponse.json(detalle) : error(404, 'El sismo no tiene pronóstico de réplicas');
+  }),
+
+  http.post(ruta('/api/replicas/:id/validar'), async ({ request, params }) => {
+    const u = autorizar(request, 'ADMIN');
+    if (u instanceof Response) return u;
+    await delay(LATENCIA_MS * 4);
+    const detalle = detalleReplicas(Number(params.id));
+    if (!detalle) return error(404, 'El sismo no tiene pronóstico de réplicas');
+    const v = detalle.validacion[0]?.resultados;
+    return HttpResponse.json({ idSismo: Number(params.id), resumen: v?.resumen, resumenGenerico: v?.resumenGenerico, ventanas: 3 }, { status: 201 });
+  }),
+
+  http.post(ruta('/api/replicas/recalcular'), async ({ request }) => {
+    const u = autorizar(request, 'ADMIN');
+    if (u instanceof Response) return u;
+    await delay(LATENCIA_MS * 4);
+    return HttpResponse.json({ estado: 'listo', principales: PRINCIPALES_REPLICAS.length }, { status: 201 });
+  }),
+
   http.get(ruta('/api/analisis/zonas'), ({ request }) => {
     const u = autorizar(request);
     return u instanceof Response ? u : HttpResponse.json(zonasDisponibles(configuracion.minEventosZona));

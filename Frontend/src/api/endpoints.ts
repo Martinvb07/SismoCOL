@@ -12,6 +12,7 @@ import type {
   CuerpoEditarUsuario,
   CuerpoLogin,
   CuerpoPrediccion,
+  DetalleReplicas,
   Dispositivo,
   Estadisticas,
   FiltrosSismos,
@@ -30,6 +31,8 @@ import type {
   RespuestaPrediccion,
   RespuestaSincronizacion,
   ResumenAdmin,
+  ResumenPrincipal,
+  RespuestaValidacionReplicas,
   Simulacion,
   Sismo,
   Usuario,
@@ -89,6 +92,22 @@ export const apiAnalisis = {
   guardarConfiguracion: (cuerpo: CuerpoConfiguracion) =>
     peticion<ConfiguracionAnalisis>('/api/analisis/configuracion', { metodo: 'PUT', cuerpo }),
   recalcular: () => peticion<{ mensaje: string }>('/api/analisis/recalcular', { metodo: 'POST' }),
+};
+
+/* ---------- Pronóstico de réplicas ---------- */
+export const apiReplicas = {
+  principales: () => peticion<ResumenPrincipal[]>('/api/replicas'),
+  detalle: (idSismo: number) => peticion<DetalleReplicas>(`/api/replicas/${idSismo}`),
+  recalcular: () =>
+    peticion<{ estado: string; principales?: number }>('/api/replicas/recalcular', {
+      metodo: 'POST',
+      tiempoEsperaMs: TIEMPO_ESPERA_ENTRENAMIENTO_MS,
+    }),
+  validar: (idSismo: number) =>
+    peticion<RespuestaValidacionReplicas>(`/api/replicas/${idSismo}/validar`, {
+      metodo: 'POST',
+      tiempoEsperaMs: TIEMPO_ESPERA_ENTRENAMIENTO_MS,
+    }),
 };
 
 /* ---------- Modelo de impacto ---------- */
@@ -162,6 +181,8 @@ export const claves = {
   advertencias: ['advertencias'] as const,
   configuracion: ['analisis', 'configuracion'] as const,
   modelos: ['modelos'] as const,
+  replicas: ['replicas'] as const,
+  detalleReplicas: (idSismo: number) => ['replicas', idSismo] as const,
   simulaciones: ['simulaciones'] as const,
   dispositivos: ['dispositivos'] as const,
   cargas: (paginacion: ParametrosPaginacion) => ['cargas', paginacion] as const,

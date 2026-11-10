@@ -57,7 +57,7 @@ export function ContenidoConsulta<T>({ consulta, esVacio, vacio, textoCargando, 
 }
 
 /** Aviso obligatorio en toda vista con probabilidades o advertencias. */
-export function AvisoAlcance({ fechaCorte }: { fechaCorte?: string | null }) {
+export function AvisoAlcance({ fechaCorte, texto = AVISO_ALCANCE }: { fechaCorte?: string | null; texto?: string }) {
   return (
     <aside
       aria-label="Aviso de alcance"
@@ -65,7 +65,7 @@ export function AvisoAlcance({ fechaCorte }: { fechaCorte?: string | null }) {
     >
       <p className="flex gap-2">
         <IconoAlerta className="mt-0.5 shrink-0" />
-        <span>{AVISO_ALCANCE}</span>
+        <span>{texto}</span>
       </p>
       {fechaCorte !== undefined && (
         <p className="shrink-0 whitespace-nowrap font-semibold">Datos hasta {formatearFechaLarga(fechaCorte)}</p>
