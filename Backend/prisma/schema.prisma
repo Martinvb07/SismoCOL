@@ -25,6 +25,8 @@ enum FuenteDato {
   UNGRD
   DESINVENTAR
   USGS
+  /// Catálogo histórico USGS M ≥ 4,5 desde 1973 (D14). No entra en las estadísticas del SGC.
+  USGS_HIST
 }
 
 enum OrigenCarga {
@@ -88,7 +90,7 @@ model Usuario {
 // ─── Datos sísmicos ─────────────────────────────────────────────────────────
 
 /// Una carga es un archivo subido por un admin (origen ARCHIVO) o una
-/// sincronización automática con SGC/USGS/UNGRD (origen API, sin usuario).
+/// sincronización automática con SGC/USGS/USGS_HIST/UNGRD (origen API, sin usuario).
 model CargaDatos {
   idCarga          Int         @id @default(autoincrement()) @map("id_carga")
   idUsuario        Int?        @map("id_usuario")

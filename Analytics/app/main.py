@@ -131,6 +131,19 @@ def sincronizar(_: Protegido, cfg: Config) -> dict[str, object]:
     return resultado
 
 
+@app.post("/sync/usgs-historico", status_code=201)
+def sincronizar_usgs_historico(_: Protegido, cfg: Config, anio_inicio: int | None = None) -> dict[str, object]:
+    """Catálogo histórico USGS M ≥ 4,5 (USGS_HIST). No dispara el recálculo del SGC."""
+    if anio_inicio is not None and not 1900 <= anio_inicio <= 2100:
+        raise HTTPException(status_code=400, detail="Año de inicio no válido")
+    try:
+        guardadas = servicio.sincronizar_usgs_historico(cfg, anio_inicio)
+    except Exception as error:
+        log.exception("Sincronización USGS histórica fallida")
+        return {"idsCarga": [], "errores": [f"USGS_HIST: {type(error).__name__}"]}
+    return {"idsCarga": [g.id_carga for g in guardadas], "errores": []}
+
+
 # ─── Análisis de frecuencia (fase 4) ────────────────────────────────────────
 
 NIVELES = ("NORMAL", "ELEVADA", "ALTA")

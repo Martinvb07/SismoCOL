@@ -453,6 +453,7 @@ export const handlers = [
       DESINVENTAR: { leidos: 1010, validos: 396, nuevos: 0, existentes: 396, porMotivo: { 'profundidad nula': 584, 'magnitud nula': 486 }, conEpicentro: 0, conCentroide: 396, conAfectacion: 396 },
       UNGRD: { leidos: 38, validos: 38, nuevos: 2, existentes: 36, porMotivo: {}, conEpicentro: 0, conCentroide: 38, conAfectacion: 38 },
       USGS: { leidos: 41, validos: 41, nuevos: 41, existentes: 0, porMotivo: {}, conEpicentro: 41, conCentroide: 0, conAfectacion: 0 },
+      USGS_HIST: { leidos: 120, validos: 118, nuevos: 118, existentes: 0, porMotivo: { 'fuera de Colombia': 2 }, conEpicentro: 120, conCentroide: 0, conAfectacion: 0 },
     } satisfies Record<Fuente, unknown>;
     const porFuente = fuentes.map((f) => ({ fuente: f, ...reportesBase[f] }));
     const ahora = new Date().toISOString();
@@ -524,6 +525,27 @@ export const handlers = [
     registrar('CARGA', 'Sincronización manual UNGRD (2 registros)', u);
     // Sincronización parcial: USGS no respondió
     return HttpResponse.json({ cargas: [nueva], errores: ['USGS: ConnectionError'] }, { status: 201 });
+  }),
+
+  http.post(ruta('/api/sincronizaciones/usgs-historico'), async ({ request }) => {
+    const u = autorizar(request, 'ADMIN');
+    if (u instanceof Response) return u;
+    await delay(LATENCIA_MS * 6);
+    const id = Math.max(...cargas.map((c) => c.idCarga), 0) + 1;
+    const nueva: Carga = {
+      idCarga: id,
+      origen: 'API',
+      fuente: 'USGS_HIST',
+      nombreArchivo: 'USGS FDSN histórico M≥4.5 1973-2026',
+      registrosLeidos: 120,
+      registrosValidos: 118,
+      estado: 'PROCESADO',
+      fechaCarga: new Date().toISOString(),
+      usuario: null,
+    };
+    cargas.unshift(nueva);
+    registrar('CARGA', 'Sincronización USGS histórico (118 registros)', u);
+    return HttpResponse.json({ cargas: [nueva], errores: [] }, { status: 201 });
   }),
 
   http.get(ruta('/api/usuarios'), ({ request }) => {

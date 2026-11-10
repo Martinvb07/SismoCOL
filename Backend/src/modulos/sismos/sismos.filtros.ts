@@ -49,7 +49,8 @@ export function construirWhere(f: FiltrosSismos): Prisma.RegistroSismicoWhereInp
     };
   }
   if (f.departamento) where.departamento = f.departamento;
-  if (f.fuente) where.fuente = f.fuente;
+  // El catálogo histórico USGS_HIST (D14) solo se muestra si se pide explícitamente.
+  where.fuente = f.fuente ?? { not: FuenteDato.USGS_HIST };
   if (f.magMin !== undefined || f.magMax !== undefined) {
     where.magnitud = { ...(f.magMin !== undefined && { gte: f.magMin }), ...(f.magMax !== undefined && { lte: f.magMax }) };
   }

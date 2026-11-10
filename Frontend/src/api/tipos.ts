@@ -4,7 +4,7 @@
  */
 
 export type Rol = 'ADMIN' | 'USUARIO';
-export type Fuente = 'SGC' | 'UNGRD' | 'DESINVENTAR' | 'USGS';
+export type Fuente = 'SGC' | 'UNGRD' | 'DESINVENTAR' | 'USGS' | 'USGS_HIST';
 export type NivelImpacto = 'SIN_AFECTACION' | 'BAJO' | 'MODERADO' | 'ALTO';
 export type NivelAdvertencia = 'NORMAL' | 'ELEVADA' | 'ALTA';
 export type PrecisionUbicacion = 'EPICENTRO' | 'CENTROIDE_MUNICIPIO';
@@ -13,7 +13,7 @@ export type EstadoEnvio = 'PENDIENTE' | 'ENVIADA' | 'FALLIDA';
 export type OrdenSismos = 'fecha_desc' | 'fecha_asc' | 'magnitud_desc' | 'magnitud_asc';
 export type Tendencia = 'CRECIENTE' | 'DECRECIENTE' | 'SIN_TENDENCIA';
 
-export const FUENTES: readonly Fuente[] = ['SGC', 'UNGRD', 'DESINVENTAR', 'USGS'];
+export const FUENTES: readonly Fuente[] = ['SGC', 'UNGRD', 'DESINVENTAR', 'USGS', 'USGS_HIST'];
 export const NIVELES_IMPACTO: readonly NivelImpacto[] = ['SIN_AFECTACION', 'BAJO', 'MODERADO', 'ALTO'];
 export const NIVELES_ADVERTENCIA: readonly NivelAdvertencia[] = ['NORMAL', 'ELEVADA', 'ALTA'];
 export const ROLES: readonly Rol[] = ['ADMIN', 'USUARIO'];

@@ -1,16 +1,23 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { mensajeDeError } from '@/api/cliente';
 import { apiAdmin } from '@/api/endpoints';
+import type { RespuestaSincronizacion } from '@/api/tipos';
 import { Alerta, Boton, Tarjeta } from '@/componentes/ui/Basicos';
 import { IconoRecargar } from '@/componentes/ui/Iconos';
 import { CargaArchivo } from './datos/CargaArchivo';
 import { Entrenamiento, VersionesModelo } from './datos/Entrenamiento';
 import { EncabezadoCargas, FilaCarga } from './TablaCargas';
 
-function Sincronizacion() {
+interface PropsSincronizacion {
+  accion: () => Promise<RespuestaSincronizacion>;
+  descripcion: string;
+  boton: string;
+}
+
+function Sincronizacion({ accion, descripcion, boton }: PropsSincronizacion) {
   const clienteConsultas = useQueryClient();
   const sincronizar = useMutation({
-    mutationFn: apiAdmin.sincronizar,
+    mutationFn: accion,
     onSuccess: () => {
       void clienteConsultas.invalidateQueries({ queryKey: ['cargas'] });
       void clienteConsultas.invalidateQueries({ queryKey: ['admin'] });
@@ -20,11 +27,9 @@ function Sincronizacion() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-tinta-secundaria">
-        Trae los eventos nuevos de USGS (FDSN) y los reportes de sismos de UNGRD (datos.gov.co). También corre a diario de forma automática.
-      </p>
+      <p className="text-sm text-tinta-secundaria">{descripcion}</p>
       <Boton onClick={() => sincronizar.mutate()} cargando={sincronizar.isPending}>
-        <IconoRecargar /> Sincronizar ahora
+        <IconoRecargar /> {boton}
       </Boton>
       {sincronizar.isError && <Alerta tipo="error">{mensajeDeError(sincronizar.error)}</Alerta>}
       {r && (
@@ -65,7 +70,21 @@ export default function PaginaAdminDatos() {
         <CargaArchivo />
       </Tarjeta>
       <Tarjeta titulo="Sincronización con fuentes oficiales">
-        <Sincronizacion />
+        <Sincronizacion
+          accion={apiAdmin.sincronizar}
+          boton="Sincronizar ahora"
+          descripcion="Trae los eventos nuevos de USGS (FDSN) y los reportes de sismos de UNGRD (datos.gov.co). También corre a diario de forma automática."
+        />
+      </Tarjeta>
+      <Tarjeta
+        titulo="Catálogo histórico USGS"
+        descripcion="Sismos M ≥ 4,5 desde 1973 (fuente USGS histórico). Se usa para tasas de sismos grandes y periodos de retorno; no se mezcla con el catálogo del SGC."
+      >
+        <Sincronizacion
+          accion={apiAdmin.sincronizarHistorico}
+          boton="Sincronizar catálogo histórico"
+          descripcion="La primera vez descarga todo el catálogo (una consulta por año, puede tardar unos minutos); después solo actualiza desde el año del último evento."
+        />
       </Tarjeta>
       <Tarjeta titulo="Entrenamiento del modelo de impacto">
         <Entrenamiento />

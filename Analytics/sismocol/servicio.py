@@ -12,7 +12,7 @@ import pandas as pd
 from sismocol import db
 from sismocol.config import Ajustes
 from sismocol.fuentes.ungrd import descargar_reportes_sismo
-from sismocol.fuentes.usgs import descargar_eventos
+from sismocol.fuentes.usgs import descargar_eventos, descargar_historico
 from sismocol.geo import haversine_km
 from sismocol.impacto import ReglaNivel, cargar_reglas
 from sismocol.ingest import ErrorIngesta, ResultadoIngesta, leer_archivo, procesar
@@ -114,14 +114,42 @@ def sincronizar_usgs(ajustes: Ajustes) -> list[db.CargaGuardada]:
         eventos = eventos[eventos.time > pd.Timestamp(fin_sgc)]
     if eventos.empty:
         return []
-    crudo = pd.DataFrame({
+    crudo = _crudo_usgs(eventos)
+    nombre = f"USGS FDSN {inicio:%Y-%m-%d} a {ahora:%Y-%m-%d}"
+    resultado = procesar(crudo, nombre, resolvedor(ajustes), reglas(),
+                         fuente_por_defecto="USGS", zona_horaria="UTC")
+    return db.guardar_ingesta(url, resultado, None, "API", ajustes.tamano_lote_insercion)
+
+
+# ─── Catálogo histórico USGS (USGS_HIST) ────────────────────────────────────
+
+def _crudo_usgs(eventos: pd.DataFrame) -> pd.DataFrame:
+    return pd.DataFrame({
         "id_evento": eventos["id"], "fecha": eventos["time"], "latitud": eventos["latitude"],
         "longitud": eventos["longitude"], "profundidad_km": eventos["depth"],
         "magnitud": eventos["mag"], "tipo_magnitud": eventos["magType"],
     })
-    nombre = f"USGS FDSN {inicio:%Y-%m-%d} a {ahora:%Y-%m-%d}"
-    resultado = procesar(crudo, nombre, resolvedor(ajustes), reglas(),
-                         fuente_por_defecto="USGS", zona_horaria="UTC")
+
+
+def sincronizar_usgs_historico(ajustes: Ajustes, anio_inicio: int | None = None) -> list[db.CargaGuardada]:
+    """Catálogo USGS M ≥ 4,5 desde 1973 (decisión D14), guardado como USGS_HIST.
+
+    Es incremental: si ya hay datos, se vuelve a pedir desde el año del último
+    evento (las claves de origen hacen idempotente la recarga). La zona se asigna
+    con la lógica de la ingesta (municipio más cercano ≤ 60 km → zona_de); los
+    eventos más lejanos (mar adentro, países vecinos) quedan sin zona."""
+    url = ajustes.database_url
+    if anio_inicio is None:
+        ultimo = db.ultima_fecha(url, "USGS_HIST")
+        anio_inicio = ultimo.year if ultimo is not None else ajustes.usgs_hist_anio_inicio
+    anio_fin = datetime.now(timezone.utc).year
+    eventos = descargar_historico(ajustes.url_usgs, anio_inicio, anio_fin,
+                                  ajustes.usgs_hist_magnitud_min, ajustes.http_timeout_s)
+    if eventos.empty:
+        return []
+    nombre = f"USGS FDSN histórico M≥{ajustes.usgs_hist_magnitud_min:g} {anio_inicio}-{anio_fin}"
+    resultado = procesar(_crudo_usgs(eventos), nombre, resolvedor(ajustes), reglas(),
+                         fuente_por_defecto="USGS_HIST", zona_horaria="UTC")
     return db.guardar_ingesta(url, resultado, None, "API", ajustes.tamano_lote_insercion)
 
 

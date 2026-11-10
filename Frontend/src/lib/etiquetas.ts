@@ -10,6 +10,7 @@ export const ETIQUETAS_FUENTE: Record<Fuente, string> = {
   UNGRD: 'UNGRD',
   DESINVENTAR: 'DesInventar',
   USGS: 'USGS',
+  USGS_HIST: 'USGS histórico',
 };
 
 export const ETIQUETAS_PRECISION: Record<PrecisionUbicacion, string> = {

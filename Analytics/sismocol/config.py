@@ -28,6 +28,9 @@ class Ajustes(BaseSettings):
     # Fuentes en línea
     url_usgs: str = "https://earthquake.usgs.gov/fdsnws/event/1/query"
     usgs_magnitud_min: float = 2.5
+    # Catálogo histórico USGS_HIST (tasas de sismos grandes, fases 1 y 4).
+    usgs_hist_magnitud_min: float = 4.5
+    usgs_hist_anio_inicio: int = Field(default=1973, ge=1900, le=2100)
     url_ungrd: str = "https://www.datos.gov.co/resource/2343-nuqp.json"
     http_timeout_s: int = 120
     # Sincronización diaria (antes del recálculo de las 02:15), formato crontab.

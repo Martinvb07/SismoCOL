@@ -105,3 +105,14 @@ rutasCargas.post('/sincronizaciones', ...soloAdmins, async (req, res) => {
   if (resultado.errores.length) req.log.warn({ errores: resultado.errores }, 'Sincronización parcial');
   res.status(201).json({ cargas: await cargasPorId(resultado.idsCarga), errores: resultado.errores });
 });
+
+const esquemaHistorico = z.object({ anioInicio: z.number().int().min(1900).max(2100).optional() });
+
+/** Catálogo histórico USGS M ≥ 4,5 desde 1973 (USGS_HIST, D14). Es incremental salvo que se indique el año. */
+rutasCargas.post('/sincronizaciones/usgs-historico', ...soloAdmins, async (req, res) => {
+  const { anioInicio } = esquemaHistorico.parse(req.body ?? {});
+  const ruta = anioInicio ? `/sync/usgs-historico?anio_inicio=${anioInicio}` : '/sync/usgs-historico';
+  const resultado = await llamarAnalytics<{ idsCarga: number[]; errores: string[] }>(ruta, { metodo: 'POST' });
+  if (resultado.errores.length) req.log.warn({ errores: resultado.errores }, 'Sincronización histórica con errores');
+  res.status(201).json({ cargas: await cargasPorId(resultado.idsCarga), errores: resultado.errores });
+});

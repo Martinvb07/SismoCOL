@@ -17,7 +17,7 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 
-from sismocol.geo import dentro_de_colombia, haversine_km
+from sismocol.geo import BBOX_HISTORICO, dentro_de_colombia, haversine_km
 from sismocol.impacto import COLUMNAS_AFECTACION, ReglaNivel, nivel_impacto
 from sismocol.municipios import ResolvedorMunicipios
 from sismocol.territorio import clave, normalizar_departamento, zona_de
@@ -32,11 +32,13 @@ PROFUNDIDAD_MAX_KM = 700.0
 LARGO_ID_ORIGEN = 40
 LARGO_MOTIVO = 120
 
-FUENTES = ("SGC", "UNGRD", "DESINVENTAR", "USGS")
+# USGS_HIST va antes que USGS: normalizar_fuente toma la primera que coincide.
+FUENTES = ("SGC", "UNGRD", "DESINVENTAR", "USGS_HIST", "USGS")
 # Zona horaria de las fechas en cada fuente (verificado en el barrido, D3).
 ZONA_HORARIA_POR_FUENTE = {
     "SGC": "UTC",
     "USGS": "UTC",
+    "USGS_HIST": "UTC",
     "DESINVENTAR": "America/Bogota",
     "UNGRD": "America/Bogota",
 }
@@ -123,9 +125,9 @@ def validar_mapeo(mapeo: dict[str, str], fuente_por_defecto: str | None) -> None
 # ─── Normalización ──────────────────────────────────────────────────────────
 
 def normalizar_fuente(valor: object) -> str | None:
-    k = clave(str(valor)) if isinstance(valor, str) else ""
+    k = clave(str(valor)).replace(" ", "") if isinstance(valor, str) else ""
     for fuente in FUENTES:
-        if fuente.lower() in k.replace(" ", ""):
+        if fuente.lower().replace("_", "") in k:
             return fuente
     return None
 
@@ -301,8 +303,11 @@ def marcar_anomalias(df: pd.DataFrame) -> pd.DataFrame:
     _agregar_motivo(motivos, df.profundidad_km < 0, "profundidad negativa")
     _agregar_motivo(motivos, df.profundidad_km > PROFUNDIDAD_MAX_KM, "profundidad fuera de rango")
     con_coord = df.latitud.notna() & df.longitud.notna()
-    fuera_bbox = con_coord & ~dentro_de_colombia(df.latitud.fillna(0).to_numpy(),
-                                                 df.longitud.fillna(0).to_numpy())
+    lat, lon = df.latitud.fillna(0).to_numpy(), df.longitud.fillna(0).to_numpy()
+    # El catálogo histórico usa un rectángulo algo más amplio (BBOX_HISTORICO).
+    dentro = np.where((df.fuente == "USGS_HIST").to_numpy(), dentro_de_colombia(lat, lon, BBOX_HISTORICO),
+                      dentro_de_colombia(lat, lon))
+    fuera_bbox = con_coord & ~dentro
     _agregar_motivo(motivos, extranjero | fuera_bbox, "fuera de Colombia")
     _agregar_motivo(motivos, no_reconocido, "departamento no reconocido")
     _agregar_motivo(motivos, ~con_coord & ~extranjero, "sin ubicación")

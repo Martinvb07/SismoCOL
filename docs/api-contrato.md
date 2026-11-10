@@ -22,7 +22,7 @@ Es la fuente de verdad entre `Frontend/` y `Backend/`. Si algo cambia, se actual
 
 ```ts
 type Rol = 'ADMIN' | 'USUARIO';
-type Fuente = 'SGC' | 'UNGRD' | 'DESINVENTAR' | 'USGS';
+type Fuente = 'SGC' | 'UNGRD' | 'DESINVENTAR' | 'USGS' | 'USGS_HIST';  // USGS_HIST: catálogo histórico M ≥ 4,5 (D14)
 type NivelImpacto = 'SIN_AFECTACION' | 'BAJO' | 'MODERADO' | 'ALTO';
 type NivelAdvertencia = 'NORMAL' | 'ELEVADA' | 'ALTA';
 type PrecisionUbicacion = 'EPICENTRO' | 'CENTROIDE_MUNICIPIO';
@@ -89,7 +89,7 @@ Filtros comunes (query, todos opcionales):
 - `departamento`;
 - `magMin` y `magMax`;
 - `profMin` y `profMax`;
-- `fuente`;
+- `fuente` (sin este filtro se excluye `USGS_HIST`, que solo se ve si se pide explícitamente);
 - `incluirAnomalos`: `true` o `false`; por defecto `false`.
 
 | Método | Ruta | Rol | Respuesta |
@@ -180,6 +180,7 @@ Los LEDs se derivan de la magnitud y son iguales en el frontend y en el firmware
 | POST | `/api/cargas` | Admin | `multipart/form-data`: `archivo` (CSV/XLSX, ≤ 25 MB) y, opcionalmente, `fuente: Fuente` y `zonaHoraria` (identificador IANA, p. ej. `UTC` o `America/Bogota`; si se omite, se usa la zona propia de cada fuente). Responde `201 { cargas: Carga[], reporte: ReporteCarga }` o `422 { error, detalles }` si el archivo se rechaza |
 | GET | `/api/cargas?pagina&tamano` | Admin | `Paginado<Carga>` |
 | POST | `/api/sincronizaciones` | Admin | Sincroniza con USGS y UNGRD ahora → `201 { cargas: Carga[], errores: string[] }` (`errores` lista las fuentes que fallaron, p. ej. `"USGS: ConnectionError"`) |
+| POST | `/api/sincronizaciones/usgs-historico` | Admin | Cuerpo opcional `{ anioInicio?: number }`. Descarga el catálogo USGS M ≥ 4,5 desde 1973 (por defecto incremental desde el año del último evento) y lo guarda como `USGS_HIST` → `201 { cargas: Carga[], errores: string[] }` |
 | GET | `/api/usuarios?pagina&tamano` | Admin | `Paginado<Usuario>` |
 | POST | `/api/usuarios` | Admin | Cuerpo `{ nombre, correo, contrasena (≥ 10, letras y números), rol }` → `201 Usuario` · `409` si el correo ya existe |
 | PATCH | `/api/usuarios/:id` | Admin | Cuerpo `{ nombre?, rol?, activo?, contrasena? }` → `Usuario` · `409` si un admin intenta desactivarse a sí mismo o quitarse el rol |

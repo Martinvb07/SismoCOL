@@ -6,11 +6,12 @@ Python 3.11 + FastAPI + pandas/NumPy/SciPy/scikit-learn + APScheduler. Es un ser
 
 | Ruta | Contenido |
 |---|---|
-| `app/main.py` | API interna FastAPI: `GET /health`, `POST /ingest` y `POST /sync`. Programa la sincronización diaria con APScheduler |
+| `app/main.py` | API interna FastAPI: `GET /health`, `POST /ingest`, `POST /sync` y `POST /sync/usgs-historico`. Programa la sincronización diaria con APScheduler |
 | `sismocol/ingest.py` | Tubería de ingesta y limpieza (CRISP-DM fase 3) |
 | `sismocol/municipios.py` | Resolución contra la DIVIPOLA: centroides y municipio más cercano |
 | `sismocol/fuentes/` | Clientes de USGS FDSN y UNGRD (datos.gov.co), con reintentos |
 | `sismocol/servicio.py` | Orquesta la ingesta de archivos y la sincronización |
+| `sismocol/comandos.py` | Comandos de administración (`usgs-historico`) |
 | `sismocol/db.py` | Persistencia en MySQL (SQLAlchemy Core, tablas reflejadas del esquema de Prisma) |
 | `config/umbrales_impacto.json` | Reglas de `nivel_impacto` |
 | `eda/` | Barrido de datos y vista previa de una carga |
@@ -21,6 +22,13 @@ Todos los endpoints, salvo `/health`, exigen la cabecera `X-Token-Interno` con e
 
 ```bash
 .venv/Scripts/python -m pytest
+```
+
+## Catálogo histórico USGS (USGS_HIST)
+
+```bash
+.venv/Scripts/python -m sismocol.comandos usgs-historico            # incremental
+.venv/Scripts/python -m sismocol.comandos usgs-historico --desde 1973
 ```
 
 ## Vista previa de una carga (sin escribir en la base)

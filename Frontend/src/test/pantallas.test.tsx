@@ -83,6 +83,8 @@ describe('pantallas con datos simulados', () => {
 
     await irA(usuario, 'Datos y modelo');
     expect(screen.getByRole('button', { name: /Sincronizar ahora/ })).toBeInTheDocument();
+    await usuario.click(screen.getByRole('button', { name: /Sincronizar catálogo histórico/ }));
+    expect(await screen.findByText('USGS FDSN histórico M≥4.5 1973-2026', {}, ESPERA)).toBeInTheDocument();
     expect(await screen.findByText('v1.1.0', {}, ESPERA)).toBeInTheDocument();
 
     await irA(usuario, 'Configuración del análisis');

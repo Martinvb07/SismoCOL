@@ -134,6 +134,11 @@ export const apiAdmin = {
       metodo: 'POST',
       tiempoEsperaMs: TIEMPO_ESPERA_CARGA_MS,
     }),
+  sincronizarHistorico: () =>
+    peticion<RespuestaSincronizacion>('/api/sincronizaciones/usgs-historico', {
+      metodo: 'POST',
+      tiempoEsperaMs: TIEMPO_ESPERA_CARGA_MS,
+    }),
   usuarios: (paginacion: ParametrosPaginacion) =>
     peticion<Paginado<Usuario>>('/api/usuarios', { query: { ...paginacion } }),
   crearUsuario: (cuerpo: CuerpoCrearUsuario) =>

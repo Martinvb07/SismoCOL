@@ -62,3 +62,11 @@ La API de la UNGRD no informa magnitud ni profundidad. Se asocia cada reporte al
 Gardner-Knopoff solo marca `es_replica` entre sismos con **epicentro** (`precision_ubicacion = EPICENTRO`). Con el centroide del municipio (D2) muchos sismos quedan a 0 km entre sí y la ventana espacial pierde sentido: en pruebas con un catálogo sintético de b = 1, el Nido de Bucaramanga perdía más de la mitad de sus eventos como "réplicas" y b caía a 0,80.
 
 Mc, Gutenberg-Richter, la tendencia, las probabilidades y las advertencias usan el **catálogo SGC completo**. Con eso b se recupera (0,998 en la misma prueba), y un enjambre o una secuencia de réplicas sí cuenta como actividad inusual, que es lo que la advertencia debe señalar. El análisis se recalcula después de cada carga, de cada sincronización y al cambiar la configuración. Cada recálculo guarda un lote nuevo en `analisis_zona` y `advertencia_actividad`, y la interfaz muestra el más reciente.
+
+## D14 — Catálogo histórico USGS_HIST (2026-11-10)
+Para las tasas de sismos grandes (periodos de retorno, mapa de amenaza) el catálogo del SGC es corto (nov-2022 a ago-2026). Se descarga del FDSN de USGS el catálogo M ≥ 4,5 desde 1973 en el rectángulo lat −4,5…13,5, lon −82…−66, una consulta por año, y se guarda como fuente `USGS_HIST`.
+- No se mezcla con el SGC: `analisis.catalogo()` sigue filtrando `fuente = SGC`, y la consulta (`/api/sismos`, estadísticas, CSV) excluye `USGS_HIST` salvo que se pida con `fuente=USGS_HIST`.
+- La zona se asigna con la lógica de la ingesta (municipio más cercano ≤ 60 km → `zona_de`). En la primera carga (3 937 eventos, 1973-01-05 a 2026-11-07) 2 111 quedaron sin zona: son eventos en el mar o en países vecinos. Se conservan para el mapa de amenaza, pero no entran en las tasas por zona.
+- El rectángulo es algo más amplio que `BBOX_COLOMBIA`; para `USGS_HIST` la marca "fuera de Colombia" usa `BBOX_HISTORICO`.
+- Limitación: las magnitudes son heterogéneas (82 % mb, el resto Mw/Ms/md), así que la completitud y b se estiman con esa mezcla.
+- Se sincroniza desde Admin → Datos y modelo ("Sincronizar catálogo histórico"), con `POST /api/sincronizaciones/usgs-historico` o con `python -m sismocol.comandos usgs-historico [--desde AAAA]`. Es incremental desde el año del último evento y queda registrada en `carga_datos` (`origen = API`).
