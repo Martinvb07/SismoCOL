@@ -44,6 +44,8 @@ MIN_MESES_SERIE = MIN_MESES_ENTRENAMIENTO + HORIZONTE_BACKTEST
 VENTANA_MEDIA = 12
 NIVELES = (0.80, 0.95)
 MODELOS = ("SARIMA", "INGENUO", "MEDIA_MOVIL_12")
+# Serie de todo el catálogo SGC (todas las zonas), para el resumen nacional del panel.
+ZONA_NACIONAL = "Colombia"
 # Rejilla de órdenes (p, d, q) × (P, D, Q, 12). Pequeña a propósito: la serie tiene unos 45 meses.
 ORDENES = [(0, 0, 0), (1, 0, 0), (2, 0, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)]
 ESTACIONALES = [(0, 0, 0, 0), (1, 0, 0, 12)]
@@ -237,16 +239,16 @@ def recalcular(url: str) -> dict[str, object]:
         ahora = datetime.now(timezone.utc).replace(tzinfo=None, microsecond=0)
         t = db.tablas(url)
         guardadas, omitidas = 0, []
-        for info in analisis.zonas(cat, cfg.min_eventos_zona):
-            if info.agrupada_en:
-                continue
-            propios = cat[cat.zona == info.zona]
+        grupos = [(info.zona, cat[cat.zona == info.zona]) for info in analisis.zonas(cat, cfg.min_eventos_zona)
+                  if not info.agrupada_en]
+        grupos.append((ZONA_NACIONAL, cat))
+        for zona, propios in grupos:
             mc = sismologia.magnitud_completitud(propios.magnitud.to_numpy())
             serie = serie_completa(propios.fecha_hora[propios.magnitud >= mc - 1e-9], inicio, corte)
             try:
-                r = pronosticar_serie(info.zona, mc, serie)
+                r = pronosticar_serie(zona, mc, serie)
             except ValueError as error:
-                omitidas.append(info.zona)
+                omitidas.append(zona)
                 log.info("Pronóstico omitido: %s", error)
                 continue
             parametros = {
@@ -261,7 +263,7 @@ def recalcular(url: str) -> dict[str, object]:
             }
             with db.motor(url).begin() as c:
                 id_pronostico = c.execute(insert(t["pronostico_actividad"]).values(
-                    zona=info.zona, modelo_ganador=r.ganador, magnitud_completitud=round(mc, 1),
+                    zona=zona, modelo_ganador=r.ganador, magnitud_completitud=round(mc, 1),
                     periodo_inicio=pd.Period(r.serie.index[0], "M").start_time.date(),
                     periodo_fin=pd.Period(r.serie.index[-1], "M").end_time.date(),
                     n_meses=int(r.serie.size), parametros=json.dumps(parametros), resultados=json.dumps(resultados),

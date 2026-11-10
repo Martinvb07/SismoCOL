@@ -3,6 +3,9 @@ import { apiAnalisis, claves } from '@/api/endpoints';
 import type { PronosticoActividad } from '@/api/tipos';
 import { Insignia, Tarjeta } from '@/componentes/ui/Basicos';
 import { ContenidoConsulta } from '@/componentes/ui/Estados';
+import { DetalleTecnico, EnPalabrasSimples, Semaforo, Termino } from '@/componentes/ui/Explicacion';
+import { resumenPronosticoZona, tituloPronosticoZona } from '@/lib/resumenes';
+import { explicacionSemaforo } from '@/umbralesSemaforo';
 import { GraficaPronostico } from '@/graficas/GraficaPronostico';
 import { ETIQUETAS_MODELO_PRONOSTICO } from '@/lib/etiquetas';
 import { formatearFechaHora, formatearMes, formatearNumero } from '@/lib/formato';
@@ -100,11 +103,22 @@ export function PronosticoZona({ zona }: { zona: string }) {
       {(p) => {
         const orden = p.parametros.ordenSarima.join(',');
         const estacional = p.parametros.ordenEstacional.join(',');
+        const resumen = resumenPronosticoZona(p);
         return (
           <>
+            <EnPalabrasSimples
+              semaforo={<Semaforo nivel={resumen.nivel} titulo="Actividad esperada" explicacion={explicacionSemaforo('actividadZona')} />}
+            >
+              <p>{resumen.texto}</p>
+            </EnPalabrasSimples>
             <Tarjeta
-              titulo="Sismos por mes: observado y pronóstico"
-              descripcion={`Sismos M ≥ ${formatearNumero(p.mc, 1)} por mes en ${p.zona}. Modelo mostrado: ${ETIQUETAS_MODELO_PRONOSTICO[p.modeloGanador]} (el de menor MAE en el backtesting)`}
+              titulo={tituloPronosticoZona(p)}
+              descripcion={
+                <>
+                  Sismos de <Termino termino="magnitud">magnitud</Termino> {formatearNumero(p.mc, 1)} o mayor por mes en {p.zona}: lo registrado y lo
+                  esperado para los próximos 12 meses
+                </>
+              }
             >
               <GraficaPronostico serie={p.serie} pronostico={p.pronostico} />
               <p className="mt-2 text-xs text-tinta-tenue">
@@ -113,7 +127,11 @@ export function PronosticoZona({ zona }: { zona: string }) {
                 {formatearFechaHora(p.fechaCalculo)}.
               </p>
             </Tarjeta>
-            <div className="grid grid-cols-1 gap-4">
+            <DetalleTecnico>
+              <p className="text-sm text-tinta-secundaria">
+                Modelo mostrado: {ETIQUETAS_MODELO_PRONOSTICO[p.modeloGanador]}, el de menor <Termino termino="errorMedio">error medio (MAE)</Termino>{' '}
+                en el <Termino termino="backtesting">backtesting</Termino>.
+              </p>
               <Tarjeta
                 titulo="Backtesting por origen móvil"
                 descripcion={`Entrenando hasta el mes t (desde el mes ${p.parametros.minMesesEntrenamiento}) y pronosticando t+1 a t+${p.parametros.horizonteBacktest}`}
@@ -124,7 +142,7 @@ export function PronosticoZona({ zona }: { zona: string }) {
               <Tarjeta titulo="Pronóstico mensual" descripcion="Valor central y bandas del modelo elegido">
                 <TablaMeses p={p} />
               </Tarjeta>
-            </div>
+            </DetalleTecnico>
           </>
         );
       }}

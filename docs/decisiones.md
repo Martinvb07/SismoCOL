@@ -164,3 +164,16 @@ Además de los principales M ≥ 6 que se recalculan y guardan (D15), `GET /api/
 - **Caché:** si el sismo ya tiene un pronóstico guardado, se devuelve ese. Si no, se calcula al vuelo y no se guarda en la base. Si el cálculo tarda más de 2 s, se guarda en memoria con la clave (sismo, fecha del último dato), así que se invalida solo cuando llegan datos nuevos.
 - **Advertencia en texto simple** cuando el método es genérico, o cuando el sismo cae en la ventana de Gardner-Knopoff de uno mayor anterior (podría ser su réplica y sus réplicas se mezclan).
 - **Frontend:** la vista de réplicas busca sismos por fecha, departamento, municipio y magnitud mínima (`/api/sismos?instrumental=true`) y se abre con `?sismo=id`. Consulta enlaza «Ver réplicas» desde la tabla y desde el clic en el mapa. La validación retrospectiva (`POST /api/replicas/:id/validar`) sirve para cualquier sismo.
+
+## D21 — Analítica en palabras simples (2026-11-10)
+Cada vista de analítica (Réplicas, Análisis y sus pestañas de pronóstico y amenaza, Predicción y Simulador) empieza con una tarjeta **«En palabras simples»**: una o dos frases generadas a partir de los datos (`Frontend/src/lib/resumenes.ts`), sin siglas.
+- **Semáforo:** junto a cada frase hay un semáforo bajo / moderado / alto, con color y texto. Sus umbrales están en un solo archivo, `Frontend/src/umbralesSemaforo.ts`, y el tooltip explica el criterio con esos mismos números:
+  - réplicas: P(≥ 1 réplica M ≥ 5 en 7 días), umbrales 10 % y 30 %;
+  - actividad por zona: primer mes pronosticado frente al promedio de los últimos 12 meses, umbrales 1,0 y 1,3;
+  - amenaza: P(M ≥ 6 en 10 años), umbrales 10 % y 50 %;
+  - impacto y advertencias: por su categoría.
+- **Detalle técnico plegable:** las tablas técnicas (intervalos, p/c/b, MAE/MAPE, backtesting, SHAP, Mann-Kendall, Gutenberg-Richter, periodos de retorno con su rango y la validación retrospectiva de réplicas) van dentro de «Ver detalle técnico», cerrado por defecto.
+- **Glosario:** cada término técnico lleva un ícono (i) con su explicación en una frase, tomada de `Frontend/src/lib/glosario.ts`. El tooltip se dibuja en un portal y se ajusta al ancho de la pantalla.
+- **Gráficas:** el título dice la conclusión (por ejemplo, «Las réplicas disminuyen rápido después del sismo»), los ejes tienen unidades en español y las leyendas no usan siglas.
+- **Panel principal:** «¿Qué dice SismoCol hoy?» resume las zonas con advertencia, el último sismo fuerte con su probabilidad de réplicas a 7 días, la zona con mayor P(M ≥ 6 en 10 años) y los sismos esperados en todo el país. Para esto último, el pronóstico mensual (D16) calcula además la serie `Colombia` con todo el catálogo SGC.
+- **Avisos:** el aviso de alcance (RNF12) usa ahora palabras simples: «Esto es una estimación con datos históricos; no predice cuándo ni dónde ocurrirá un sismo».

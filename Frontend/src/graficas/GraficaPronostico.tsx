@@ -31,7 +31,7 @@ const formatoConteo = format('~s');
 /** Serie mensual observada y pronóstico de 12 meses con bandas del 80 y el 95 %. */
 export function GraficaPronostico({ serie, pronostico, alto = ALTO_POR_DEFECTO }: Props) {
   const { tooltip, mostrar, ocultar } = useTooltip<Punto>();
-  const m = MARGENES_POR_DEFECTO;
+  const m = { ...MARGENES_POR_DEFECTO, izquierda: 60 };
   const puntos: Punto[] = [
     ...serie.map((s) => ({ mes: s.mes, eventos: s.eventos, p: null })),
     ...pronostico.map((p) => ({ mes: p.mes, eventos: null, p })),
@@ -97,7 +97,15 @@ export function GraficaPronostico({ serie, pronostico, alto = ALTO_POR_DEFECTO }
 
           return (
             <>
-              <Eje escala={y} orientacion="izquierda" x={m.izquierda} configurar={configurarY} rejilla={anchoPlot} />
+              <Eje
+                escala={y}
+                orientacion="izquierda"
+                x={m.izquierda}
+                configurar={configurarY}
+                rejilla={anchoPlot}
+                titulo="Sismos por mes"
+                tituloEn={(m.arriba + alto - m.abajo) / 2}
+              />
               <Eje escala={x} orientacion="abajo" y={alto - m.abajo} configurar={configurarX} />
               <path d={area95(banda) ?? undefined} fill={COLOR_BANDA} opacity={0.35} pointerEvents="none" />
               <path d={area80(banda) ?? undefined} fill={COLOR_BANDA} opacity={0.7} pointerEvents="none" />
@@ -128,12 +136,12 @@ export function GraficaPronostico({ serie, pronostico, alto = ALTO_POR_DEFECTO }
       </ContenedorGrafica>
       <Leyenda>
         <ElementoLeyenda color={COLOR_SERIE} tipo="linea">
-          Observados por mes
+          Sismos registrados cada mes
         </ElementoLeyenda>
         <ElementoLeyenda color={COLOR_PRONOSTICO} tipo="discontinua">
-          Pronóstico
+          Sismos esperados (pronóstico)
         </ElementoLeyenda>
-        <ElementoLeyenda color={COLOR_BANDA}>Bandas del 80 % (oscura) y el 95 % (clara)</ElementoLeyenda>
+        <ElementoLeyenda color={COLOR_BANDA}>Rango probable: 8 de cada 10 casos (oscuro) y 95 de cada 100 (claro)</ElementoLeyenda>
       </Leyenda>
     </div>
   );

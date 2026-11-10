@@ -15,6 +15,7 @@ import type {
 import { useSesion } from '@/auth/sesion';
 import { Alerta, Boton, DatoClave, Insignia, InsigniaEstado, Tarjeta } from '@/componentes/ui/Basicos';
 import { AvisoAlcance, ContenidoConsulta, EstadoVacio } from '@/componentes/ui/Estados';
+import { DetalleTecnico, EnPalabrasSimples, Semaforo, Termino } from '@/componentes/ui/Explicacion';
 import { Campo, Entrada, EntradaFecha, Selector } from '@/componentes/ui/Formulario';
 import { IconoRecargar } from '@/componentes/ui/Iconos';
 import { Paginacion } from '@/componentes/ui/Paginacion';
@@ -23,6 +24,8 @@ import { CurvaReplicas } from '@/graficas/CurvaReplicas';
 import { estiloMagnitud } from '@/lib/escalasColor';
 import { ETIQUETAS_FUENTE, ETIQUETAS_METODO } from '@/lib/etiquetas';
 import { MAGNITUD_MIN_REPLICAS } from '@/lib/replicas';
+import { porcentajeSimple, resumenReplicas, tituloCurvaReplicas } from '@/lib/resumenes';
+import { explicacionSemaforo } from '@/umbralesSemaforo';
 import { formatearEntero, formatearFechaHora, formatearMagnitud, formatearNumero, formatearPorcentaje, formatearProfundidad } from '@/lib/formato';
 /** Parámetro de la URL con el sismo elegido: /replicas?sismo=123. */
 const PARAMETRO_SISMO = 'sismo';
@@ -33,9 +36,12 @@ const ETIQUETAS_HORIZONTE: Record<HorizonteReplicas['horizonte'], string> = {
   '30d': 'Próximos 30 días',
 };
 
+function lugarPrincipal(s: SismoPrincipal): string {
+  return s.municipio ? `${s.municipio} (${s.departamento ?? ''})` : `fuera de un municipio (${formatearNumero(s.latitud, 2)}, ${formatearNumero(s.longitud, 2)})`;
+}
+
 function nombrePrincipal(s: SismoPrincipal): string {
-  const lugar = s.municipio ? `${s.municipio} (${s.departamento ?? ''})` : `${formatearNumero(s.latitud, 2)}, ${formatearNumero(s.longitud, 2)}`;
-  return `${formatearMagnitud(s.magnitud)} · ${formatearFechaHora(s.fechaHora)} · ${lugar}`;
+  return `${formatearMagnitud(s.magnitud)} · ${formatearFechaHora(s.fechaHora)} · ${lugarPrincipal(s)}`;
 }
 
 function TablaProbabilidades({ horizontes }: { horizontes: HorizonteReplicas[] }) {
@@ -80,8 +86,16 @@ function Parametros({ p }: { p: PronosticoReplicas }) {
     <div className="space-y-3">
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <DatoClave etiqueta="Método" valor={ETIQUETAS_METODO[p.metodo]} />
-        <DatoClave etiqueta="Réplicas ≥ Mc en el ajuste" valor={formatearEntero(p.nReplicas)} detalle={`Mc = ${formatearNumero(p.mc, 1)}`} />
-        <DatoClave etiqueta="a · b" valor={`${formatearNumero(p.a, 2)} · ${formatearNumero(p.b, 2)}`} detalle={p.parametros.bEstimado ? 'b de la secuencia' : 'b genérico'} />
+        <DatoClave
+          etiqueta="Réplicas ≥ Mc en el ajuste"
+          valor={formatearEntero(p.nReplicas)}
+          detalle={<Termino termino="completitud">{`Mc = ${formatearNumero(p.mc, 1)}`}</Termino>}
+        />
+        <DatoClave
+          etiqueta="a · b"
+          valor={`${formatearNumero(p.a, 2)} · ${formatearNumero(p.b, 2)}`}
+          detalle={<Termino termino="valorB">{p.parametros.bEstimado ? 'b de la secuencia' : 'b genérico'}</Termino>}
+        />
         <DatoClave etiqueta="p · c (días)" valor={`${formatearNumero(p.p, 2)} · ${formatearNumero(p.c, 3)}`} />
       </dl>
       <p className="text-xs text-tinta-tenue">
@@ -229,6 +243,23 @@ function Validacion({ detalle, esAdmin }: { detalle: DetalleReplicas; esAdmin: b
   );
 }
 
+function ProbabilidadesSimples({ p }: { p: PronosticoReplicas }) {
+  const siete = p.resultados.horizontes.find((h) => h.horizonte === '7d');
+  if (!siete) return null;
+  return (
+    <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {siete.magnitudes.map((m) => (
+        <DatoClave
+          key={m.magnitud}
+          etiqueta={`Réplica de magnitud ${formatearNumero(m.magnitud)} o más`}
+          valor={porcentajeSimple(m.probabilidad)}
+          detalle="probabilidad de al menos una en 7 días"
+        />
+      ))}
+    </dl>
+  );
+}
+
 function Detalle({ idSismo, esAdmin }: { idSismo: number; esAdmin: boolean }) {
   const detalle = useQuery({ queryKey: claves.replicasSismo(idSismo), queryFn: () => apiReplicas.sismo(idSismo) });
   return (
@@ -236,28 +267,53 @@ function Detalle({ idSismo, esAdmin }: { idSismo: number; esAdmin: boolean }) {
       {(d) => {
         const p = d.pronostico;
         const diasAjuste = (p.horasAjuste ?? 0) / 24;
+        const resumen = resumenReplicas(p);
         return (
           <>
-            <Tarjeta
-              titulo="Pronóstico vigente"
-              descripcion={`Probabilidad de al menos una réplica desde ${formatearFechaHora(p.parametros.datosHasta)} (último dato disponible)`}
+            <EnPalabrasSimples
+              semaforo={<Semaforo nivel={resumen.nivel} titulo="Nivel de réplicas" explicacion={explicacionSemaforo('replicas')} />}
             >
-              <div className="space-y-4">
-                <p className="text-sm text-tinta-secundaria">
-                  Sismo: {nombrePrincipal(d.principal)} · profundidad {formatearProfundidad(d.principal.profundidadKm)} · fuente{' '}
-                  {ETIQUETAS_FUENTE[d.principal.fuente]} · método: {ETIQUETAS_METODO[d.metodo]}
-                </p>
-                {d.advertencia && <Alerta tipo="aviso">{d.advertencia}</Alerta>}
-                <TablaProbabilidades horizontes={p.resultados.horizontes} />
-                <Parametros p={p} />
-              </div>
+              <p>{resumen.texto}</p>
+              {d.advertencia && <p className="text-sm text-tinta-secundaria">{d.advertencia}</p>}
+            </EnPalabrasSimples>
+            <Tarjeta
+              titulo={
+                <>
+                  Probabilidad de <Termino termino="replica">réplicas</Termino> en los próximos 7 días
+                </>
+              }
+              descripcion={
+                <>
+                  Sismo de <Termino termino="magnitud">magnitud</Termino> {formatearNumero(d.principal.magnitud, 1)} del{' '}
+                  {formatearFechaHora(d.principal.fechaHora)} · {lugarPrincipal(d.principal)} · {formatearProfundidad(d.principal.profundidadKm)} de
+                  profundidad
+                </>
+              }
+            >
+              <ProbabilidadesSimples p={p} />
             </Tarjeta>
-            <Tarjeta titulo="Curva de decaimiento" descripcion="Réplicas acumuladas ≥ Mc: observado contra esperado (eje de tiempo logarítmico)">
+            <Tarjeta titulo={tituloCurvaReplicas(p.resultados.curva)} descripcion="Réplicas acumuladas desde el sismo: lo registrado contra lo que espera el modelo">
               <CurvaReplicas curva={p.resultados.curva} diasAjuste={diasAjuste} mc={p.mc} />
             </Tarjeta>
-            <Tarjeta titulo="Validación retrospectiva" descripcion="Backtesting: ajuste con los primeros datos y comparación con lo observado después">
-              <Validacion detalle={d} esAdmin={esAdmin} />
-            </Tarjeta>
+            <DetalleTecnico>
+              <section className="space-y-3">
+                <h3 className="text-sm font-semibold">
+                  Pronóstico por ventana y magnitud con <Termino termino="intervalo">intervalo del 95 %</Termino>
+                </h3>
+                <p className="text-xs text-tinta-tenue">
+                  Sismo: {nombrePrincipal(d.principal)} · fuente {ETIQUETAS_FUENTE[d.principal.fuente]} · método: {ETIQUETAS_METODO[d.metodo]} · desde{' '}
+                  {formatearFechaHora(p.parametros.datosHasta)} (último dato disponible)
+                </p>
+                <TablaProbabilidades horizontes={p.resultados.horizontes} />
+                <Parametros p={p} />
+              </section>
+              <section className="space-y-3 border-t border-borde pt-4">
+                <h3 className="text-sm font-semibold">
+                  Validación retrospectiva (<Termino termino="backtesting">backtesting</Termino>)
+                </h3>
+                <Validacion detalle={d} esAdmin={esAdmin} />
+              </section>
+            </DetalleTecnico>
           </>
         );
       }}
@@ -304,7 +360,7 @@ function SismosFuertes({ alElegir, elegido }: { alElegir: (id: number) => void; 
               >
                 <span className="font-semibold">{formatearMagnitud(s.magnitud)}</span> · {formatearFechaHora(s.fechaHora)}
                 <span className="block text-tinta-secundaria">{s.municipio ? `${s.municipio} (${s.departamento ?? ''})` : 'Fuera de un municipio'}</span>
-                <span className="block text-xs text-tinta-tenue">Réplica M ≥ 4 en 7 días: {formatearPorcentaje(s.probabilidad7dM4)}</span>
+                <span className="block text-xs text-tinta-tenue">Réplica de magnitud 4 o más en 7 días: {porcentajeSimple(s.probabilidad7dM4)}</span>
               </button>
             </li>
           ))}
@@ -444,7 +500,7 @@ export default function PaginaReplicas() {
       <AvisoAlcance texto={AVISO_PRONOSTICO} />
       <Tarjeta
         titulo="Sismos fuertes recientes"
-        descripcion="Sismos de magnitud 6 o más que no son réplica de otro mayor"
+        descripcion="Sismos de magnitud 6 o más que no son réplica de otro mayor. Elige uno para ver qué réplicas se esperan."
         acciones={esAdmin ? <Recalcular /> : undefined}
       >
         <SismosFuertes alElegir={elegir} elegido={idSismo} />

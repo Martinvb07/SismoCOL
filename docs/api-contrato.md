@@ -154,7 +154,7 @@ interface Advertencia {
 
 | Método | Ruta | Rol | Cuerpo / respuesta |
 |---|---|---|---|
-| GET | `/api/analisis/pronostico?zona=` | Usuario | `PronosticoActividad` del último cálculo · `409` si la zona está agrupada o tiene pocos meses. Ver D16 |
+| GET | `/api/analisis/pronostico?zona=` | Usuario | `PronosticoActividad` del último cálculo · `409` si la zona está agrupada o tiene pocos meses. Ver D16. `zona=Colombia` devuelve la serie de todo el país (D21) |
 
 ```ts
 type ModeloPronostico = 'SARIMA' | 'INGENUO' | 'MEDIA_MOVIL_12';
@@ -281,8 +281,8 @@ interface ResumenAdmin {
 
 Toda vista con probabilidades o advertencias muestra este texto:
 
-> Una advertencia indica que la actividad reciente supera estadísticamente el comportamiento habitual de la zona. No es un pronóstico de sismo ni reemplaza los boletines oficiales del SGC.
+> Esto es una estimación con datos históricos; no predice cuándo ni dónde ocurrirá un sismo. Una advertencia solo indica que en una zona está temblando más de lo normal, y no reemplaza los boletines del Servicio Geológico Colombiano.
 
 Las vistas de pronósticos (réplicas, actividad por zona, periodos de retorno, amenaza) muestran este otro (RNF12):
 
-> Este es un pronóstico probabilístico calculado con modelos estadísticos y validado con datos pasados. No predice la fecha, el lugar ni la magnitud de un sismo, y no reemplaza los boletines oficiales del SGC ni las indicaciones de la UNGRD.
+> Esto es una estimación con datos históricos; no predice cuándo ni dónde ocurrirá un sismo. No reemplaza los boletines del Servicio Geológico Colombiano ni las indicaciones de la Unidad Nacional para la Gestión del Riesgo de Desastres.

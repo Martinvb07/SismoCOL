@@ -43,7 +43,12 @@ describe('pantallas con datos simulados', () => {
     expect(screen.getByText('Usuario', { selector: 'span' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument();
 
-    // Consulta
+    // Consulta: «¿Qué dice SismoCol hoy?» con cuatro tarjetas que enlazan a su vista
+    const hoy = await screen.findByRole('region', { name: '¿Qué dice SismoCol hoy?' }, ESPERA);
+    expect(within(hoy).getAllByRole('link')).toHaveLength(4);
+    expect(await within(hoy).findByText(/Probabilidad de al menos una réplica de magnitud 4 o más en 7 días/, {}, ESPERA)).toBeInTheDocument();
+    expect(within(hoy).getByRole('link', { name: /Sismos esperados en todo el país/ })).toHaveAttribute('href', '/analisis?pestana=pronostico');
+
     expect(await screen.findByRole('heading', { name: 'Mapa de sismos' }, ESPERA)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Distribución de magnitudes' })).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Exportar CSV/ }, ESPERA)).toBeInTheDocument();
@@ -59,21 +64,29 @@ describe('pantallas con datos simulados', () => {
     // Análisis
     await irA(usuario, 'Análisis y advertencias');
     expect(screen.getAllByText(AVISO_ALCANCE).length).toBeGreaterThan(0);
+    expect(await screen.findByRole('region', { name: 'En palabras simples' }, ESPERA)).toHaveTextContent(/más sismos de lo normal/);
+    expect(screen.getByText('Ver detalle técnico')).toBeInTheDocument();
     expect(await screen.findByText('τ de Kendall', {}, ESPERA)).toBeInTheDocument();
     expect(await screen.findByText(/log₁₀ N =/, {}, ESPERA)).toBeInTheDocument();
     expect((await screen.findAllByText(/Datos hasta/, {}, ESPERA)).length).toBeGreaterThan(0);
     expect(await screen.findByText('Nido de Bucaramanga', { selector: 'td' }, ESPERA)).toBeInTheDocument();
     await usuario.click(screen.getByRole('tab', { name: 'Pronóstico' }));
+    expect(await screen.findByText(/se esperan unos \d+ sismos de magnitud/, {}, ESPERA)).toBeInTheDocument();
+    expect(screen.getByText(/^Actividad esperada:/)).toBeInTheDocument();
     expect(await screen.findByRole('table', { name: /backtesting por origen móvil/i }, ESPERA)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /pronóstico de 12 meses/ })).toBeInTheDocument();
     expect(screen.getAllByText(AVISO_PRONOSTICO).length).toBeGreaterThan(0);
     await usuario.click(screen.getByRole('tab', { name: 'Periodo de retorno y amenaza' }));
+    expect(await screen.findByText(/se espera en promedio un sismo de magnitud 6 o más/, {}, ESPERA)).toBeInTheDocument();
     expect(await screen.findByRole('table', { name: /Periodo de retorno y probabilidad/ }, ESPERA)).toBeInTheDocument();
     expect(await screen.findByRole('img', { name: /Mapa de amenaza/ }, ESPERA)).toBeInTheDocument();
 
     // Pronóstico de réplicas
     await irA(usuario, 'Pronóstico de réplicas');
     expect(screen.getAllByText(AVISO_PRONOSTICO).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/En los próximos 7 días, contados desde el/, {}, ESPERA)).toBeInTheDocument();
+    expect(screen.getByText(/^Nivel de réplicas:/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '¿Qué significa réplicas?' })).toBeInTheDocument();
     expect(await screen.findByRole('table', { name: /Probabilidad de al menos una réplica/ }, ESPERA)).toBeInTheDocument();
     expect((await screen.findAllByRole('img', { name: /Réplicas acumuladas/ }, ESPERA)).length).toBe(2);
     expect(screen.getByText('Modelo ajustado')).toBeInTheDocument();
@@ -90,7 +103,9 @@ describe('pantallas con datos simulados', () => {
     await usuario.click(screen.getByRole('button', { name: 'Estimar impacto' }));
     expect(await screen.findByText('Nivel de impacto estimado', {}, ESPERA)).toBeInTheDocument();
     expect(screen.getByText(/Modelo v1\.1\.0/)).toBeInTheDocument();
-    expect(screen.getByText('Por qué este nivel (SHAP)')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Por qué este nivel/ })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'En palabras simples' })).toHaveTextContent(/Si ocurriera un sismo de magnitud/);
+    expect(screen.getByText(/^Impacto:/)).toBeInTheDocument();
     await usuario.click(screen.getByRole('button', { name: 'Simular escenario' }));
     expect(await screen.findByRole('table', { name: /Municipios del escenario/ }, ESPERA)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /Mapa del escenario con 12 municipios/ })).toBeInTheDocument();

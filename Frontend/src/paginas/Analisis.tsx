@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useId, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Amenaza } from './analisis/Amenaza';
 import { PronosticoZona } from './analisis/PronosticoZona';
 import { apiAnalisis, claves } from '@/api/endpoints';
@@ -9,7 +10,10 @@ import { AvisoAlcance, ContenidoConsulta, EstadoVacio } from '@/componentes/ui/E
 import { Selector } from '@/componentes/ui/Formulario';
 import { GraficaGutenbergRichter } from '@/graficas/GraficaGutenbergRichter';
 import { ResumenMannKendall, SerieMensual } from '@/graficas/SerieMensual';
+import { DetalleTecnico, EnPalabrasSimples, Semaforo, Termino } from '@/componentes/ui/Explicacion';
 import { AVISO_PRONOSTICO } from '@/config';
+import { resumenAdvertencias, tituloTendencia } from '@/lib/resumenes';
+import { EXPLICACION_ADVERTENCIA } from '@/umbralesSemaforo';
 import { estiloNivelAdvertencia } from '@/lib/escalasColor';
 import { formatearFecha, formatearFechaHora, formatearNumero, formatearPorcentaje, formatearPValor } from '@/lib/formato';
 
@@ -27,6 +31,11 @@ function AvisoAgrupada({ agrupadaEn }: { agrupadaEn: string | null }) {
 }
 
 type Pestana = 'frecuencia' | 'pronostico' | 'amenaza';
+const PARAMETRO_PESTANA = 'pestana';
+
+function esPestana(valor: string | null): valor is Pestana {
+  return valor === 'frecuencia' || valor === 'pronostico' || valor === 'amenaza';
+}
 
 const PESTANAS: ReadonlyArray<{ id: Pestana; titulo: string }> = [
   { id: 'frecuencia', titulo: 'Frecuencia y advertencias' },
@@ -68,8 +77,8 @@ function TablaProbabilidades({ datos, zonaSeleccionada }: { datos: Probabilidade
             <th scope="col">Zona</th>
             {MAGNITUDES.map((m) => (
               <th key={m} scope="col" className="text-right">
-                M ≥ {m}
-                <span className="block font-normal normal-case tracking-normal">1 año / 10 años</span>
+                Magnitud {m} o más
+                <span className="block font-normal normal-case tracking-normal">en 1 año / en 10 años</span>
               </th>
             ))}
           </tr>
@@ -101,7 +110,10 @@ export default function PaginaAnalisis() {
   const idNivel = useId();
   const [zonaElegida, setZonaElegida] = useState<string | null>(null);
   const [nivel, setNivel] = useState<NivelAdvertencia | ''>('');
-  const [pestana, setPestana] = useState<Pestana>('frecuencia');
+  const [parametros, setParametros] = useSearchParams();
+  const delParametro = parametros.get(PARAMETRO_PESTANA);
+  const pestana: Pestana = esPestana(delParametro) ? delParametro : 'frecuencia';
+  const setPestana = (p: Pestana) => setParametros({ [PARAMETRO_PESTANA]: p }, { replace: true });
   const aviso = pestana === 'frecuencia' ? undefined : AVISO_PRONOSTICO;
 
   const zonas = useQuery({ queryKey: claves.zonas, queryFn: apiAnalisis.zonas });
@@ -123,6 +135,7 @@ export default function PaginaAnalisis() {
     queryFn: () => apiAnalisis.advertencias(nivel ? { nivel } : {}),
   });
 
+  const todasAdvertencias = useQuery({ queryKey: [...claves.advertencias, ''], queryFn: () => apiAnalisis.advertencias({}) });
   const fechaCorte = advertencias.data?.fechaCorte ?? probabilidades.data?.fechaCorte ?? frecuencia.data?.fechaCorte ?? null;
 
   return (
@@ -170,46 +183,79 @@ export default function PaginaAnalisis() {
 
       {pestana === 'frecuencia' && (
         <div role="tabpanel" id="panel-frecuencia" aria-labelledby="pestana-frecuencia" className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <Tarjeta titulo="Tendencia mensual" descripcion="Mann-Kendall con pendiente de Sen sobre eventos por mes">
-              {zona === null ? (
-                <EstadoVacio titulo="Elige una zona" />
-              ) : (
-                <ContenidoConsulta consulta={frecuencia} esVacio={(f) => f.serieMensual.length === 0}>
-                  {(f) => (
-                    <div className="space-y-3">
-                      <AvisoAgrupada agrupadaEn={f.agrupadaEn} />
-                      <ResumenMannKendall mk={f.mannKendall} />
-                      <SerieMensual serie={f.serieMensual} mannKendall={f.mannKendall} />
-                    </div>
-                  )}
-                </ContenidoConsulta>
-              )}
-            </Tarjeta>
-
-            <Tarjeta titulo="Gutenberg-Richter" descripcion="Frecuencia acumulada por magnitud y magnitud de completitud">
-              {zona === null ? (
-                <EstadoVacio titulo="Elige una zona" />
-              ) : (
-                <ContenidoConsulta consulta={gr} esVacio={(g) => g.puntos.length === 0}>
-                  {(g) => (
-                    <>
-                      <AvisoAgrupada agrupadaEn={g.agrupadaEn} />
-                      <GraficaGutenbergRichter gr={g} />
-                      <p className="mt-2 text-xs text-tinta-tenue">
-                        Tasa anual de eventos M ≥ Mc: {formatearNumero(g.tasaAnual, 1)}. El valor a es anual; la recta se dibuja sobre los
-                        conteos de todo el periodo (a + log₁₀ años).
-                      </p>
-                    </>
-                  )}
-                </ContenidoConsulta>
-              )}
-            </Tarjeta>
-          </div>
+          <ContenidoConsulta consulta={todasAdvertencias} alto="h-24">
+            {(a) => {
+              const resumen = resumenAdvertencias(
+                a.datos,
+                a.fechaCorte,
+                zona && frecuencia.data ? { nombre: zona, tendencia: frecuencia.data.mannKendall.tendencia } : undefined,
+              );
+              return (
+                <EnPalabrasSimples semaforo={<Semaforo nivel={resumen.nivel} titulo="Actividad" explicacion={EXPLICACION_ADVERTENCIA} />}>
+                  <p>{resumen.texto}</p>
+                </EnPalabrasSimples>
+              );
+            }}
+          </ContenidoConsulta>
 
           <Tarjeta
-            titulo="Advertencias de actividad"
-            descripcion="Ventana actual comparada con el comportamiento habitual de cada zona (prueba de Poisson)"
+            titulo={zona && frecuencia.data ? tituloTendencia(zona, frecuencia.data.mannKendall.tendencia) : 'Sismos por mes'}
+            descripcion={
+              <>
+                Cantidad de sismos registrados cada mes en la zona y su <Termino termino="tendencia">tendencia</Termino>
+              </>
+            }
+          >
+            {zona === null ? (
+              <EstadoVacio titulo="Elige una zona" />
+            ) : (
+              <ContenidoConsulta consulta={frecuencia} esVacio={(f) => f.serieMensual.length === 0}>
+                {(f) => (
+                  <div className="space-y-3">
+                    <AvisoAgrupada agrupadaEn={f.agrupadaEn} />
+                    <SerieMensual serie={f.serieMensual} mannKendall={f.mannKendall} />
+                  </div>
+                )}
+              </ContenidoConsulta>
+            )}
+          </Tarjeta>
+
+          <DetalleTecnico>
+            {zona === null ? (
+              <EstadoVacio titulo="Elige una zona" />
+            ) : (
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold">Prueba de tendencia de Mann-Kendall y pendiente de Sen</h3>
+                  <ContenidoConsulta consulta={frecuencia} esVacio={(f) => f.serieMensual.length === 0}>
+                    {(f) => <ResumenMannKendall mk={f.mannKendall} />}
+                  </ContenidoConsulta>
+                </section>
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold">
+                    Gutenberg-Richter: sismos por magnitud, <Termino termino="valorB">valor b</Termino> y{' '}
+                    <Termino termino="completitud">magnitud de completitud</Termino>
+                  </h3>
+                  <ContenidoConsulta consulta={gr} esVacio={(g) => g.puntos.length === 0}>
+                    {(g) => (
+                      <>
+                        <AvisoAgrupada agrupadaEn={g.agrupadaEn} />
+                        <GraficaGutenbergRichter gr={g} />
+                        <p className="mt-2 text-xs text-tinta-tenue">
+                          Tasa anual de eventos M ≥ Mc: {formatearNumero(g.tasaAnual, 1)}. El valor a es anual; la recta se dibuja sobre los
+                          conteos de todo el periodo (a + log₁₀ años).
+                        </p>
+                      </>
+                    )}
+                  </ContenidoConsulta>
+                </section>
+              </div>
+            )}
+          </DetalleTecnico>
+
+          <Tarjeta
+            titulo={<Termino termino="advertencia">Advertencias de actividad</Termino>}
+            descripcion="Sismos de los últimos días comparados con lo habitual en cada zona"
             acciones={
               <div className="flex items-center gap-2">
                 <label htmlFor={idNivel} className="text-sm text-tinta-secundaria">
@@ -246,7 +292,7 @@ export default function PaginaAnalisis() {
                           Esperados
                         </th>
                         <th scope="col" className="text-right">
-                          p-valor
+                          <Termino termino="pValor">p-valor</Termino>
                         </th>
                         <th scope="col">Emitida</th>
                       </tr>
@@ -277,8 +323,8 @@ export default function PaginaAnalisis() {
           </Tarjeta>
 
           <Tarjeta
-            titulo="Probabilidad de ocurrencia"
-            descripcion="Probabilidad de al menos un sismo de magnitud igual o mayor (Poisson sobre Gutenberg-Richter)"
+            titulo={<Termino termino="probabilidad">Probabilidad de que ocurra un sismo</Termino>}
+            descripcion="Probabilidad de al menos un sismo de la magnitud indicada o mayor en cada zona, con el catálogo reciente del Servicio Geológico Colombiano"
           >
             <ContenidoConsulta consulta={probabilidades} esVacio={(p) => p.zonas.length === 0}>
               {(p) => (

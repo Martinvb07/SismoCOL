@@ -58,7 +58,7 @@ export function ResumenMannKendall({ mk }: { mk: MannKendall }) {
 
 export function SerieMensual({ serie, mannKendall, alto = ALTO_POR_DEFECTO }: Props) {
   const { tooltip, mostrar, ocultar } = useTooltip<DatoTooltip>();
-  const m = MARGENES_POR_DEFECTO;
+  const m = { ...MARGENES_POR_DEFECTO, izquierda: 60 };
   const ultimo = serie.length - 1;
 
   const maxY = Math.max(
@@ -110,7 +110,15 @@ export function SerieMensual({ serie, mannKendall, alto = ALTO_POR_DEFECTO }: Pr
 
           return (
             <>
-              <Eje escala={y} orientacion="izquierda" x={m.izquierda} configurar={configurarY} rejilla={anchoPlot} />
+              <Eje
+                escala={y}
+                orientacion="izquierda"
+                x={m.izquierda}
+                configurar={configurarY}
+                rejilla={anchoPlot}
+                titulo="Sismos por mes"
+                tituloEn={(m.arriba + alto - m.abajo) / 2}
+              />
               <Eje escala={x} orientacion="abajo" y={alto - m.abajo} configurar={configurarX} />
               {serie.map((p, i) => {
                 const yTope = y(p.eventos);
@@ -162,12 +170,12 @@ export function SerieMensual({ serie, mannKendall, alto = ALTO_POR_DEFECTO }: Pr
         }}
       </ContenedorGrafica>
       <Leyenda>
-        <ElementoLeyenda color={COLOR_BARRAS}>Eventos por mes</ElementoLeyenda>
+        <ElementoLeyenda color={COLOR_BARRAS}>Sismos registrados cada mes</ElementoLeyenda>
         <ElementoLeyenda color={COLOR_MEDIA} tipo="linea">
-          Media móvil 12 meses
+          Promedio de los últimos 12 meses
         </ElementoLeyenda>
         <ElementoLeyenda color={COLOR_SEN} tipo="discontinua">
-          Recta de Sen (y = intercepto + pendiente·t)
+          Tendencia (recta de Sen)
         </ElementoLeyenda>
       </Leyenda>
     </div>

@@ -5,6 +5,9 @@ import type { CuerpoPrediccion, RespuestaEscenario } from '@/api/tipos';
 import { NIVELES_IMPACTO } from '@/api/tipos';
 import { Alerta, Boton, InsigniaEstado } from '@/componentes/ui/Basicos';
 import { EstadoVacio } from '@/componentes/ui/Estados';
+import { EnPalabrasSimples, Semaforo, Termino } from '@/componentes/ui/Explicacion';
+import { resumenEscenario } from '@/lib/resumenes';
+import { EXPLICACION_IMPACTO } from '@/umbralesSemaforo';
 import { MapaEscenario } from '@/graficas/MapaEscenario';
 import { estiloNivelImpacto } from '@/lib/escalasColor';
 import { formatearEntero, formatearMagnitud, formatearNumero, formatearPorcentaje } from '@/lib/formato';
@@ -36,8 +39,8 @@ export function Simulador({ entrada }: { entrada: CuerpoPrediccion | null }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-tinta-secundaria">
-        Usa la magnitud, la profundidad y el punto del formulario. Para cada municipio a menos de 300 km con intensidad estimada de III o más
-        se calcula la intensidad (Allen, Wald y Worden 2012) y el nivel de impacto con el modelo activo.
+        Usa la magnitud, la profundidad y el punto del formulario. Para cada municipio a menos de 300 km donde el sismo se sentiría, se estima qué
+        tan fuerte sería la sacudida (<Termino termino="mmi">intensidad</Termino>) y el nivel de <Termino termino="impacto">impacto</Termino>.
       </p>
       <Boton variante="secundario" onClick={() => entrada && escenario.mutate(entrada)} cargando={escenario.isPending} disabled={!entrada}>
         Simular escenario
@@ -46,10 +49,18 @@ export function Simulador({ entrada }: { entrada: CuerpoPrediccion | null }) {
       {!r && !escenario.isError && <EstadoVacio titulo="Aún no hay escenario">Completa el formulario y pulsa «Simular escenario».</EstadoVacio>}
       {r && (
         <div className="space-y-4">
+          {(() => {
+            const resumen = resumenEscenario(r);
+            return (
+              <EnPalabrasSimples semaforo={<Semaforo nivel={resumen.nivel} titulo="Impacto" explicacion={EXPLICACION_IMPACTO} />}>
+                <p>{resumen.texto}</p>
+              </EnPalabrasSimples>
+            );
+          })()}
           <p className="text-sm">
             {formatearMagnitud(r.entrada.magnitud)} a {formatearNumero(r.entrada.profundidadKm)} km de profundidad en{' '}
             {formatearNumero(r.entrada.latitud, 2)}, {formatearNumero(r.entrada.longitud, 2)} ·{' '}
-            <strong>{formatearEntero(r.municipios.length)} municipios</strong> ({r.criterio.toLowerCase()}) · modelo {r.modelo.version}
+            <strong>{formatearEntero(r.municipios.length)} municipios</strong> a menos de 300 km donde el sismo se sentiría · modelo {r.modelo.version}
           </p>
           {!r.modeloUsaDistancia && (
             <Alerta tipo="aviso" titulo="El modelo activo no usa la distancia">
@@ -58,6 +69,7 @@ export function Simulador({ entrada }: { entrada: CuerpoPrediccion | null }) {
             </Alerta>
           )}
           <Resumen r={r} />
+          <h3 className="text-sm font-semibold">Los municipios más cercanos al epicentro sentirían la sacudida más fuerte</h3>
           <MapaEscenario municipios={r.municipios} epicentro={r.entrada} />
           <div className="max-h-[28rem] overflow-auto">
             <table className="tabla min-w-[48rem]">
@@ -70,10 +82,10 @@ export function Simulador({ entrada }: { entrada: CuerpoPrediccion | null }) {
                     Probabilidad
                   </th>
                   <th scope="col" className="text-right">
-                    P(alto)
+                    Probabilidad de impacto alto
                   </th>
                   <th scope="col" className="text-right">
-                    MMI
+                    <Termino termino="mmi">Intensidad</Termino>
                   </th>
                   <th scope="col" className="text-right">
                     Distancia

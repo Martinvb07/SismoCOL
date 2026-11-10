@@ -41,7 +41,7 @@ export const TIEMPO_FRESCO_CONSULTAS_MS = 60_000;
 /** Texto exacto del aviso de alcance (docs/api-contrato.md). */
 /** Aviso de alcance de los pronósticos (RNF12): réplicas, actividad, periodos de retorno y amenaza. */
 export const AVISO_PRONOSTICO =
-  'Este es un pronóstico probabilístico calculado con modelos estadísticos y validado con datos pasados. No predice la fecha, el lugar ni la magnitud de un sismo, y no reemplaza los boletines oficiales del SGC ni las indicaciones de la UNGRD.';
+  'Esto es una estimación con datos históricos; no predice cuándo ni dónde ocurrirá un sismo. No reemplaza los boletines del Servicio Geológico Colombiano ni las indicaciones de la Unidad Nacional para la Gestión del Riesgo de Desastres.';
 
 export const AVISO_ALCANCE =
-  'Una advertencia indica que la actividad reciente supera estadísticamente el comportamiento habitual de la zona. No es un pronóstico de sismo ni reemplaza los boletines oficiales del SGC.';
+  'Esto es una estimación con datos históricos; no predice cuándo ni dónde ocurrirá un sismo. Una advertencia solo indica que en una zona está temblando más de lo normal, y no reemplaza los boletines del Servicio Geológico Colombiano.';

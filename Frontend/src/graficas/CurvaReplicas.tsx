@@ -32,7 +32,7 @@ function etiquetaDias(d: number): string {
 /** Acumulado de réplicas ≥ Mc: observado (escalones) contra esperado por Reasenberg-Jones con banda del 95 %. */
 export function CurvaReplicas({ curva, diasAjuste, mc, alto = ALTO_POR_DEFECTO }: Props) {
   const { tooltip, mostrar, ocultar } = useTooltip<PuntoCurvaReplicas>();
-  const m = MARGENES_POR_DEFECTO;
+  const m = { ...MARGENES_POR_DEFECTO, izquierda: 60, abajo: 48 };
   const maxY = Math.max(max(curva, (p) => p.superior) ?? 0, max(curva, (p) => p.observado ?? 0) ?? 0, 1);
   const dias = curva.map((p) => p.dias);
   const minX = Math.max(Math.min(...dias), 0.005);
@@ -87,14 +87,25 @@ export function CurvaReplicas({ curva, diasAjuste, mc, alto = ALTO_POR_DEFECTO }
 
           return (
             <>
-              <Eje escala={y} orientacion="izquierda" x={m.izquierda} configurar={configurarY} rejilla={anchoPlot} />
+              <Eje
+                escala={y}
+                orientacion="izquierda"
+                x={m.izquierda}
+                configurar={configurarY}
+                rejilla={anchoPlot}
+                titulo="Réplicas acumuladas"
+                tituloEn={(m.arriba + alto - m.abajo) / 2}
+              />
               <Eje escala={x} orientacion="abajo" y={alto - m.abajo} configurar={configurarX} />
+              <text x={(m.izquierda + ancho - m.derecha) / 2} y={alto - 6} textAnchor="middle" fontSize={ESTILO_GRAFICA.tamanoTexto} fill={ESTILO_GRAFICA.colorEje}>
+                Tiempo desde el sismo (h = horas, d = días)
+              </text>
               <path d={banda(curva) ?? undefined} fill={COLOR_BANDA} opacity={0.45} pointerEvents="none" />
               <path d={esperado(curva) ?? undefined} fill="none" stroke={COLOR_ESPERADO} strokeWidth={ESTILO_GRAFICA.grosorLinea} strokeDasharray="6 4" pointerEvents="none" />
               <path d={observado(curva) ?? undefined} fill="none" stroke={COLOR_OBSERVADO} strokeWidth={ESTILO_GRAFICA.grosorLinea} pointerEvents="none" />
               <line x1={xAjuste} x2={xAjuste} y1={m.arriba} y2={alto - m.abajo} stroke={COLOR_AJUSTE} strokeDasharray="2 3" pointerEvents="none" />
               <text x={xAjuste + 4} y={m.arriba + 10} fontSize={ESTILO_GRAFICA.tamanoTexto} fill={COLOR_AJUSTE}>
-                fin del ajuste
+                datos hasta aquí
               </text>
               {curva.map((p, i) => {
                 const siguiente = curva[i + 1];
@@ -120,12 +131,12 @@ export function CurvaReplicas({ curva, diasAjuste, mc, alto = ALTO_POR_DEFECTO }
       </ContenedorGrafica>
       <Leyenda>
         <ElementoLeyenda color={COLOR_OBSERVADO} tipo="linea">
-          Observadas (M ≥ {formatearNumero(mc, 1)})
+          Réplicas registradas (magnitud {formatearNumero(mc, 1)} o mayor)
         </ElementoLeyenda>
         <ElementoLeyenda color={COLOR_ESPERADO} tipo="discontinua">
-          Esperadas (Reasenberg-Jones)
+          Réplicas esperadas por el modelo
         </ElementoLeyenda>
-        <ElementoLeyenda color={COLOR_BANDA}>Intervalo del 95 %</ElementoLeyenda>
+        <ElementoLeyenda color={COLOR_BANDA}>Rango probable (95 de cada 100 casos)</ElementoLeyenda>
       </Leyenda>
     </div>
   );

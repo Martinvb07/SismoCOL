@@ -3,13 +3,17 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { esErrorApi, mensajeDeError } from '@/api/cliente';
 import { apiModelos } from '@/api/endpoints';
-import type { RespuestaPrediccion } from '@/api/tipos';
+import type { CuerpoPrediccion, RespuestaPrediccion } from '@/api/tipos';
 import { Alerta, Boton, Tarjeta } from '@/componentes/ui/Basicos';
 import { AvisoAlcance, EstadoVacio } from '@/componentes/ui/Estados';
 import { Campo, Entrada } from '@/componentes/ui/Formulario';
 import { ContribucionesPrediccion } from '@/graficas/BarrasShap';
 import { BarrasProbabilidad } from '@/graficas/BarrasProbabilidad';
 import { Simulador } from './prediccion/Simulador';
+import { DetalleTecnico, EnPalabrasSimples, Semaforo, Termino } from '@/componentes/ui/Explicacion';
+import { resumenPrediccion } from '@/lib/resumenes';
+import { EXPLICACION_IMPACTO } from '@/umbralesSemaforo';
+import { AVISO_PRONOSTICO } from '@/config';
 import { MapaColombia } from '@/graficas/MapaColombia';
 import { estiloNivelImpacto } from '@/lib/escalasColor';
 import { aplicarErroresApi, numeroOpcional } from '@/lib/formularios';
@@ -25,10 +29,16 @@ const PASO_COORDENADA = 0.0001;
 /** Ejemplo inicial: un sismo intermedio en el Nido de Bucaramanga. */
 const VALORES_INICIALES: DatosPrediccion = { magnitud: 5.5, profundidadKm: 140, latitud: 6.81, longitud: -73.11 };
 
-function Resultado({ r }: { r: RespuestaPrediccion }) {
+function Resultado({ r, entrada }: { r: RespuestaPrediccion; entrada: CuerpoPrediccion }) {
   const estilo = estiloNivelImpacto(r.nivelImpacto);
+  const resumen = resumenPrediccion(r, entrada);
   return (
     <div className="space-y-4">
+      <EnPalabrasSimples
+        semaforo={<Semaforo nivel={resumen.nivel} titulo="Impacto" explicacion={EXPLICACION_IMPACTO} />}
+      >
+        <p>{resumen.texto}</p>
+      </EnPalabrasSimples>
       <div className="rounded-md border p-4" style={{ borderColor: estilo.borde, backgroundColor: estilo.fondo }}>
         <p className="text-sm text-tinta-secundaria">Nivel de impacto estimado</p>
         <p className="mt-1 text-2xl font-bold" style={{ color: estilo.texto }}>
@@ -41,7 +51,7 @@ function Resultado({ r }: { r: RespuestaPrediccion }) {
       {r.municipio && (
         <p className="text-sm text-tinta-secundaria">
           Municipio evaluado: <strong>{r.municipio.nombre}</strong> ({r.municipio.departamento}), a {formatearNumero(r.municipio.distanciaKm)} km del
-          punto · intensidad estimada <strong>MMI {formatearNumero(r.intensidadMmi, 1)}</strong> · distancia hipocentral{' '}
+          punto · <Termino termino="mmi">intensidad estimada</Termino> <strong>{formatearNumero(r.intensidadMmi, 1)}</strong> · distancia hipocentral{' '}
           {formatearNumero(r.distanciaHipocentralKm)} km
         </p>
       )}
@@ -50,14 +60,14 @@ function Resultado({ r }: { r: RespuestaPrediccion }) {
         <BarrasProbabilidad probabilidades={r.probabilidades} seleccionada={r.nivelImpacto} />
       </div>
       {r.explicacion && r.explicacion.length > 0 && (
-        <div>
-          <h3 className="mb-1 text-sm font-semibold text-tinta">Por qué este nivel (SHAP)</h3>
+        <DetalleTecnico>
+          <h3 className="mb-1 text-sm font-semibold text-tinta">Por qué este nivel (<Termino termino="shap">SHAP</Termino>)</h3>
           <p className="mb-2 text-xs text-tinta-tenue">
             Contribución de cada variable a la clase «{estilo.etiqueta}»: en rojo empuja hacia esa clase y en azul la aleja. Se calcula sobre el
             modelo sin calibrar.
           </p>
           <ContribucionesPrediccion contribuciones={r.explicacion} />
-        </div>
+        </DetalleTecnico>
       )}
       <p className="text-xs text-tinta-tenue">
         Modelo {r.modelo.version} · {r.modelo.algoritmo} · predicción n.º {formatearNumero(r.idPrediccion)}
@@ -173,7 +183,7 @@ export default function PaginaPrediccion() {
               {errorSinModelo ? 'Un administrador debe entrenar o activar un modelo de impacto.' : mensajeDeError(prediccion.error)}
             </Alerta>
           ) : prediccion.data ? (
-            <Resultado r={prediccion.data} />
+            <Resultado r={prediccion.data} entrada={prediccion.variables} />
           ) : (
             <EstadoVacio titulo="Aún no hay estimación">Completa el formulario y pulsa «Estimar impacto».</EstadoVacio>
           )}
@@ -187,7 +197,7 @@ export default function PaginaPrediccion() {
         <Simulador entrada={entradaEscenario} />
       </Tarjeta>
 
-      <AvisoAlcance />
+      <AvisoAlcance texto={AVISO_PRONOSTICO} />
     </>
   );
 }

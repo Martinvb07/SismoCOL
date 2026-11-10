@@ -51,9 +51,9 @@ export function MapaAmenaza({ celdas, tamanoCelda, magnitud, anios, alto = ALTO_
               <p className="mb-1 font-semibold">
                 Celda {formatearNumero(tooltip.dato.latitud, 2)}°, {formatearNumero(tooltip.dato.longitud, 2)}°
               </p>
-              <FilaTooltip etiqueta={`P(M ≥ ${formatearNumero(magnitud, 0)} en ${formatearNumero(anios, 0)} años)`} valor={formatearPorcentaje(tooltip.dato.probabilidad10a)} />
-              <FilaTooltip etiqueta="Tasa anual M ≥ 5" valor={formatearNumero(tooltip.dato.tasaM5, 4)} />
-              <FilaTooltip etiqueta="Eventos en la celda" valor={formatearEntero(tooltip.dato.eventos)} />
+              <FilaTooltip etiqueta={`Probabilidad en ${formatearNumero(anios, 0)} años`} valor={formatearPorcentaje(tooltip.dato.probabilidad10a)} />
+              <FilaTooltip etiqueta="Sismos de magnitud 5 o más por año" valor={formatearNumero(tooltip.dato.tasaM5, 3)} />
+              <FilaTooltip etiqueta="Sismos registrados en el cuadro" valor={formatearEntero(tooltip.dato.eventos)} />
             </Tooltip>
           )
         }
@@ -99,7 +99,7 @@ export function MapaAmenaza({ celdas, tamanoCelda, magnitud, anios, alto = ALTO_
       </ContenedorGrafica>
       <Leyenda>
         <li className="font-medium text-tinta-secundaria">
-          P(M ≥ {formatearNumero(magnitud, 0)} en {formatearNumero(anios, 0)} años):
+          Probabilidad de un sismo de magnitud {formatearNumero(magnitud, 0)} o más en {formatearNumero(anios, 0)} años:
         </li>
         {COLORES.map((c, i) => (
           <ElementoLeyenda key={c} color={c}>

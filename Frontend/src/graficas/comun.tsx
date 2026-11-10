@@ -42,9 +42,14 @@ interface PropsEje<D extends AxisDomain> {
   /** Longitud de las líneas de rejilla (0 = sin rejilla). */
   rejilla?: number;
   titulo?: string;
+  /** Eje izquierdo: posición vertical (en px) del centro del título. */
+  tituloEn?: number;
 }
 
-export function Eje<D extends AxisDomain>({ escala, orientacion, x = 0, y = 0, configurar, rejilla = 0, titulo }: PropsEje<D>) {
+/** Separación entre el eje izquierdo y su título girado. */
+const DISTANCIA_TITULO_IZQUIERDA = 42;
+
+export function Eje<D extends AxisDomain>({ escala, orientacion, x = 0, y = 0, configurar, rejilla = 0, titulo, tituloEn }: PropsEje<D>) {
   const ref = useRef<SVGGElement>(null);
 
   useEffect(() => {
@@ -74,6 +79,17 @@ export function Eje<D extends AxisDomain>({ escala, orientacion, x = 0, y = 0, c
       <g ref={ref} />
       {titulo && orientacion === 'abajo' && (
         <text x={0} y={0} dy={32} fill={ESTILO_GRAFICA.colorEje} fontSize={ESTILO_GRAFICA.tamanoTexto} className="titulo-eje">
+          {titulo}
+        </text>
+      )}
+      {titulo && orientacion === 'izquierda' && (
+        <text
+          transform={`translate(${-DISTANCIA_TITULO_IZQUIERDA},${tituloEn ?? 0}) rotate(-90)`}
+          textAnchor="middle"
+          fill={ESTILO_GRAFICA.colorEje}
+          fontSize={ESTILO_GRAFICA.tamanoTexto}
+          className="titulo-eje"
+        >
           {titulo}
         </text>
       )}

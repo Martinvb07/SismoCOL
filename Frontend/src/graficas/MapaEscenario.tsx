@@ -41,7 +41,7 @@ export function MapaEscenario({ municipios, epicentro, alto = ALTO_POR_DEFECTO }
               </p>
               <FilaTooltip etiqueta="Nivel" valor={estiloNivelImpacto(tooltip.dato.nivelImpacto).etiqueta} />
               <FilaTooltip etiqueta="Probabilidad" valor={formatearPorcentaje(tooltip.dato.probabilidad)} />
-              <FilaTooltip etiqueta="MMI estimada" valor={formatearNumero(tooltip.dato.intensidadMmi, 1)} />
+              <FilaTooltip etiqueta="Intensidad estimada" valor={formatearNumero(tooltip.dato.intensidadMmi, 1)} />
               <FilaTooltip etiqueta="Distancia hipocentral" valor={`${formatearNumero(tooltip.dato.distanciaHipocentralKm)} km`} />
             </Tooltip>
           )

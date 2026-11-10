@@ -9,6 +9,7 @@ import { MapaColombia } from '@/graficas/MapaColombia';
 import { formatearEntero, formatearFecha, formatearFechaHora, formatearMagnitud, formatearProfundidad } from '@/lib/formato';
 import { admiteReplicas, rutaReplicas } from '@/lib/replicas';
 import { FormularioFiltros } from './consulta/FormularioFiltros';
+import { ResumenHoy } from './consulta/ResumenHoy';
 import { TablaSismos } from './consulta/TablaSismos';
 
 const FILTROS_INICIALES: FiltrosSismos = { incluirAnomalos: false };
@@ -25,6 +26,8 @@ export default function PaginaConsulta() {
 
   return (
     <>
+      <ResumenHoy />
+
       <Tarjeta titulo="Filtros">
         <FormularioFiltros
           departamentos={departamentos.data ?? []}
