@@ -99,6 +99,11 @@ async def manejar_sin_historico(_, error: amenaza.SinCatalogoHistorico) -> JSONR
     return JSONResponse(status_code=409, content={"error": str(error)})
 
 
+@app.exception_handler(replicas.MagnitudInsuficiente)
+async def manejar_magnitud_insuficiente(_, error: replicas.MagnitudInsuficiente) -> JSONResponse:
+    return JSONResponse(status_code=422, content={"error": str(error)})
+
+
 @app.exception_handler(ErrorIngesta)
 async def manejar_error_ingesta(_, error: ErrorIngesta) -> JSONResponse:
     return JSONResponse(status_code=422, content={"error": str(error)})
@@ -236,6 +241,12 @@ def escenario(_: Protegido, cfg: Config, entrada: EntradaPrediccion) -> dict[str
 @app.get("/replicas")
 def principales_replicas(_: Protegido, cfg: Config) -> list[dict[str, object]]:
     return replicas.lista_principales(cfg.database_url)
+
+
+@app.get("/replicas/sismo/{id_sismo}")
+def replicas_de_sismo(_: Protegido, cfg: Config, id_sismo: int) -> dict[str, object]:
+    """Pronóstico de réplicas al vuelo para cualquier sismo SGC o USGS con M ≥ 4."""
+    return replicas.pronostico_sismo(cfg.database_url, id_sismo, cfg.replicas_magnitud_min)
 
 
 @app.get("/replicas/{id_sismo}")

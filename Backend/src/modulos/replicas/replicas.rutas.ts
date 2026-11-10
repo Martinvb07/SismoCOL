@@ -15,6 +15,12 @@ rutasReplicas.get('/replicas', autenticar, async (_req, res) => {
   res.json(await llamarAnalytics('/replicas'));
 });
 
+/** Pronóstico al vuelo de cualquier sismo SGC o USGS con M ≥ 4 (usa el guardado si es un principal). */
+rutasReplicas.get('/replicas/sismo/:id', autenticar, async (req, res) => {
+  const { id } = esquemaId.parse(req.params);
+  res.json(await llamarAnalytics(`/replicas/sismo/${id}`, { timeoutMs: TIEMPO_CALCULO_MS }));
+});
+
 rutasReplicas.get('/replicas/:id', autenticar, async (req, res) => {
   const { id } = esquemaId.parse(req.params);
   res.json(await llamarAnalytics(`/replicas/${id}`));

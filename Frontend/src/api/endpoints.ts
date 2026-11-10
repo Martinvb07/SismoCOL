@@ -32,6 +32,7 @@ import type {
   RespuestaLogin,
   RespuestaMapaAmenaza,
   RespuestaPeriodosRetorno,
+  RespuestaReplicasSismo,
   RespuestaPrediccion,
   RespuestaSincronizacion,
   ResumenAdmin,
@@ -49,12 +50,14 @@ export function filtrosAQuery(filtros: FiltrosSismos): Record<string, ValorQuery
     desde: filtros.desde,
     hasta: filtros.hasta,
     departamento: filtros.departamento,
+    municipio: filtros.municipio,
     magMin: filtros.magMin,
     magMax: filtros.magMax,
     profMin: filtros.profMin,
     profMax: filtros.profMax,
     fuente: filtros.fuente,
     incluirAnomalos: filtros.incluirAnomalos ? true : undefined,
+    instrumental: filtros.instrumental ? true : undefined,
   };
 }
 
@@ -109,6 +112,8 @@ export const apiAmenaza = {
 export const apiReplicas = {
   principales: () => peticion<ResumenPrincipal[]>('/api/replicas'),
   detalle: (idSismo: number) => peticion<DetalleReplicas>(`/api/replicas/${idSismo}`),
+  sismo: (idSismo: number) =>
+    peticion<RespuestaReplicasSismo>(`/api/replicas/sismo/${idSismo}`, { tiempoEsperaMs: TIEMPO_ESPERA_ENTRENAMIENTO_MS }),
   recalcular: () =>
     peticion<{ estado: string; principales?: number }>('/api/replicas/recalcular', {
       metodo: 'POST',
@@ -201,6 +206,7 @@ export const claves = {
   periodosRetorno: ['amenaza', 'periodos'] as const,
   mapaAmenaza: ['amenaza', 'mapa'] as const,
   detalleReplicas: (idSismo: number) => ['replicas', idSismo] as const,
+  replicasSismo: (idSismo: number) => ['replicas', 'sismo', idSismo] as const,
   simulaciones: ['simulaciones'] as const,
   dispositivos: ['dispositivos'] as const,
   cargas: (paginacion: ParametrosPaginacion) => ['cargas', paginacion] as const,

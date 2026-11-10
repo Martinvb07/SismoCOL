@@ -17,6 +17,8 @@ export function filtrarSismos(params: URLSearchParams): Sismo[] {
   const desde = params.get('desde');
   const hasta = params.get('hasta');
   const departamento = params.get('departamento');
+  const municipio = params.get('municipio')?.toLowerCase() ?? null;
+  const instrumental = params.get('instrumental') === 'true';
   const fuente = params.get('fuente');
   const incluirAnomalos = params.get('incluirAnomalos') === 'true';
   const magMin = num('magMin');
@@ -30,6 +32,8 @@ export function filtrarSismos(params: URLSearchParams): Sismo[] {
     if (desde && dia < desde) return false;
     if (hasta && dia > hasta) return false;
     if (departamento && s.departamento !== departamento) return false;
+    if (municipio && !(s.municipio ?? '').toLowerCase().includes(municipio)) return false;
+    if (instrumental && s.fuente !== 'SGC' && s.fuente !== 'USGS') return false;
     if (fuente && s.fuente !== fuente) return false;
     if (magMin !== null && (s.magnitud === null || s.magnitud < magMin)) return false;
     if (magMax !== null && (s.magnitud === null || s.magnitud > magMax)) return false;
@@ -83,6 +87,7 @@ export function calcularEstadisticas(lista: Sismo[]): Estadisticas {
       profundidadKm: s.profundidadKm as number,
       fechaHora: s.fechaHora,
       municipio: s.municipio,
+      fuente: s.fuente,
     }));
 
   return {

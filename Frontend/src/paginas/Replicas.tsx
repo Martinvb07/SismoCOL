@@ -1,9 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useId, useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useId, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { mensajeDeError } from '@/api/cliente';
-import { apiReplicas, claves } from '@/api/endpoints';
+import { apiReplicas, apiSismos, claves } from '@/api/endpoints';
 import type {
   DetalleReplicas,
+  FiltrosSismos,
   HorizonteReplicas,
   PronosticoReplicas,
   ResumenPrincipal,
@@ -11,14 +13,19 @@ import type {
   SismoPrincipal,
 } from '@/api/tipos';
 import { useSesion } from '@/auth/sesion';
-import { Alerta, Boton, DatoClave, Insignia, Tarjeta } from '@/componentes/ui/Basicos';
+import { Alerta, Boton, DatoClave, Insignia, InsigniaEstado, Tarjeta } from '@/componentes/ui/Basicos';
 import { AvisoAlcance, ContenidoConsulta, EstadoVacio } from '@/componentes/ui/Estados';
-import { Selector } from '@/componentes/ui/Formulario';
+import { Campo, Entrada, EntradaFecha, Selector } from '@/componentes/ui/Formulario';
 import { IconoRecargar } from '@/componentes/ui/Iconos';
-import { AVISO_PRONOSTICO } from '@/config';
+import { Paginacion } from '@/componentes/ui/Paginacion';
+import { AVISO_PRONOSTICO, TAMANO_PAGINA_POR_DEFECTO } from '@/config';
 import { CurvaReplicas } from '@/graficas/CurvaReplicas';
-import { ETIQUETAS_METODO } from '@/lib/etiquetas';
+import { estiloMagnitud } from '@/lib/escalasColor';
+import { ETIQUETAS_FUENTE, ETIQUETAS_METODO } from '@/lib/etiquetas';
+import { MAGNITUD_MIN_REPLICAS } from '@/lib/replicas';
 import { formatearEntero, formatearFechaHora, formatearMagnitud, formatearNumero, formatearPorcentaje, formatearProfundidad } from '@/lib/formato';
+/** Parámetro de la URL con el sismo elegido: /replicas?sismo=123. */
+const PARAMETRO_SISMO = 'sismo';
 
 const ETIQUETAS_HORIZONTE: Record<HorizonteReplicas['horizonte'], string> = {
   '24h': 'Próximas 24 h',
@@ -78,6 +85,7 @@ function Parametros({ p }: { p: PronosticoReplicas }) {
         <DatoClave etiqueta="p · c (días)" valor={`${formatearNumero(p.p, 2)} · ${formatearNumero(p.c, 3)}`} />
       </dl>
       <p className="text-xs text-tinta-tenue">
+        {p.idPronostico === null && 'Calculado al consultar (no se guarda) · '}
         Ventana de Gardner-Knopoff: {formatearNumero(p.parametros.ventanaKm, 0)} km y {formatearNumero(p.parametros.ventanaDias, 0)} días ·{' '}
         {formatearEntero(p.parametros.nSecuencia)} sismos en la secuencia · fuentes: {p.parametros.fuentes.join(', ') || '—'} · datos hasta{' '}
         {formatearFechaHora(p.parametros.datosHasta)}
@@ -175,12 +183,13 @@ function Validacion({ detalle, esAdmin }: { detalle: DetalleReplicas; esAdmin: b
     },
   });
   const ventanas = detalle.validacion;
+  // Mientras no haya validación guardada se muestra el resumen de la última ejecución.
   const elegida = ventanas.find((v) => v.horasAjuste === horas) ?? ventanas[0];
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-tinta-secundaria">
-        Se ajusta el modelo solo con las primeras 24 h, 72 h o 7 días tras el principal y se compara lo que pronosticaba con lo que ocurrió después. La
+        Se ajusta el modelo solo con las primeras 24 h, 72 h o 7 días tras el sismo y se compara lo que pronosticaba con lo que ocurrió después. La
         columna «Genérico» usa los parámetros de California sin ajustar nada a la secuencia, como referencia.
       </p>
       {esAdmin && (
@@ -221,9 +230,9 @@ function Validacion({ detalle, esAdmin }: { detalle: DetalleReplicas; esAdmin: b
 }
 
 function Detalle({ idSismo, esAdmin }: { idSismo: number; esAdmin: boolean }) {
-  const detalle = useQuery({ queryKey: claves.detalleReplicas(idSismo), queryFn: () => apiReplicas.detalle(idSismo) });
+  const detalle = useQuery({ queryKey: claves.replicasSismo(idSismo), queryFn: () => apiReplicas.sismo(idSismo) });
   return (
-    <ContenidoConsulta consulta={detalle}>
+    <ContenidoConsulta consulta={detalle} textoCargando="Calculando el pronóstico de réplicas…">
       {(d) => {
         const p = d.pronostico;
         const diasAjuste = (p.horasAjuste ?? 0) / 24;
@@ -235,8 +244,10 @@ function Detalle({ idSismo, esAdmin }: { idSismo: number; esAdmin: boolean }) {
             >
               <div className="space-y-4">
                 <p className="text-sm text-tinta-secundaria">
-                  Principal: {nombrePrincipal(d.principal)} · profundidad {formatearProfundidad(d.principal.profundidadKm)} · fuente {d.principal.fuente}
+                  Sismo: {nombrePrincipal(d.principal)} · profundidad {formatearProfundidad(d.principal.profundidadKm)} · fuente{' '}
+                  {ETIQUETAS_FUENTE[d.principal.fuente]} · método: {ETIQUETAS_METODO[d.metodo]}
                 </p>
+                {d.advertencia && <Alerta tipo="aviso">{d.advertencia}</Alerta>}
                 <TablaProbabilidades horizontes={p.resultados.horizontes} />
                 <Parametros p={p} />
               </div>
@@ -270,45 +281,178 @@ function Recalcular() {
   );
 }
 
+function SismosFuertes({ alElegir, elegido }: { alElegir: (id: number) => void; elegido: number | null }) {
+  const principales = useQuery({ queryKey: claves.replicas, queryFn: apiReplicas.principales });
+  return (
+    <ContenidoConsulta
+      consulta={principales}
+      alto="h-12"
+      esVacio={(l) => l.length === 0}
+      vacio={<EstadoVacio titulo="No hay sismos fuertes recientes">Se calculan después de cada carga o sincronización.</EstadoVacio>}
+    >
+      {(lista: ResumenPrincipal[]) => (
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {lista.map((s) => (
+            <li key={s.idSismo}>
+              <button
+                type="button"
+                onClick={() => alElegir(s.idSismo)}
+                aria-pressed={elegido === s.idSismo}
+                className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors hover:border-primario ${
+                  elegido === s.idSismo ? 'border-primario bg-primario-claro' : 'border-borde bg-superficie'
+                }`}
+              >
+                <span className="font-semibold">{formatearMagnitud(s.magnitud)}</span> · {formatearFechaHora(s.fechaHora)}
+                <span className="block text-tinta-secundaria">{s.municipio ? `${s.municipio} (${s.departamento ?? ''})` : 'Fuera de un municipio'}</span>
+                <span className="block text-xs text-tinta-tenue">Réplica M ≥ 4 en 7 días: {formatearPorcentaje(s.probabilidad7dM4)}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </ContenidoConsulta>
+  );
+}
+
+function BuscadorSismos({ alElegir, elegido }: { alElegir: (id: number) => void; elegido: number | null }) {
+  const [filtros, setFiltros] = useState<FiltrosSismos>({ magMin: MAGNITUD_MIN_REPLICAS, instrumental: true });
+  const [pagina, setPagina] = useState(1);
+  const departamentos = useQuery({ queryKey: claves.departamentos, queryFn: apiSismos.departamentos, staleTime: Infinity });
+  const paginacion = { pagina, tamano: TAMANO_PAGINA_POR_DEFECTO };
+  const resultados = useQuery({
+    queryKey: claves.sismos(filtros, paginacion, 'fecha_desc'),
+    queryFn: () => apiSismos.listar(filtros, paginacion, 'fecha_desc'),
+    placeholderData: keepPreviousData,
+  });
+
+  const buscar = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const datos = new FormData(e.currentTarget);
+    const texto = (clave: string) => {
+      const valor = datos.get(clave);
+      return typeof valor === 'string' && valor.trim() ? valor.trim() : undefined;
+    };
+    const magnitud = Number(datos.get('magMin'));
+    setFiltros({
+      desde: texto('desde'),
+      hasta: texto('hasta'),
+      departamento: texto('departamento'),
+      municipio: texto('municipio'),
+      magMin: Number.isFinite(magnitud) ? Math.max(magnitud, MAGNITUD_MIN_REPLICAS) : MAGNITUD_MIN_REPLICAS,
+      instrumental: true,
+    });
+    setPagina(1);
+  };
+
+  return (
+    <div className="space-y-3">
+      <form onSubmit={buscar} className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-6" aria-label="Buscar sismos">
+        <Campo etiqueta="Desde">{(p) => <EntradaFecha {...p} name="desde" />}</Campo>
+        <Campo etiqueta="Hasta">{(p) => <EntradaFecha {...p} name="hasta" />}</Campo>
+        <Campo etiqueta="Departamento">
+          {(p) => (
+            <Selector {...p} name="departamento" defaultValue="" disabled={departamentos.isPending}>
+              <option value="">Todos</option>
+              {(departamentos.data ?? []).map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </Selector>
+          )}
+        </Campo>
+        <Campo etiqueta="Municipio">{(p) => <Entrada {...p} name="municipio" placeholder="Ej.: Los Santos" />}</Campo>
+        <Campo etiqueta="Magnitud mínima" ayuda={`Desde ${MAGNITUD_MIN_REPLICAS}`}>
+          {(p) => (
+            <Entrada
+              {...p}
+              name="magMin"
+              type="number"
+              inputMode="decimal"
+              step={0.1}
+              min={MAGNITUD_MIN_REPLICAS}
+              max={9}
+              defaultValue={MAGNITUD_MIN_REPLICAS}
+            />
+          )}
+        </Campo>
+        <Boton type="submit">Buscar</Boton>
+      </form>
+      <ContenidoConsulta
+        consulta={resultados}
+        esVacio={(r) => r.total === 0}
+        vacio={<EstadoVacio titulo="No hay sismos con esos datos">Prueba con otras fechas o una magnitud menor.</EstadoVacio>}
+      >
+        {(r) => (
+          <>
+            <div className="overflow-x-auto" aria-busy={resultados.isFetching}>
+              <table className="tabla min-w-[40rem]">
+                <caption className="sr-only">Sismos encontrados para ver su pronóstico de réplicas</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Fecha (hora Colombia)</th>
+                    <th scope="col">Magnitud</th>
+                    <th scope="col">Lugar</th>
+                    <th scope="col">Fuente</th>
+                    <th scope="col">
+                      <span className="sr-only">Acción</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className={resultados.isPlaceholderData ? 'opacity-60' : undefined}>
+                  {r.datos.map((s) => (
+                    <tr key={s.idSismo} className={s.idSismo === elegido ? 'bg-primario-claro' : undefined}>
+                      <td className="whitespace-nowrap tabular-nums">{formatearFechaHora(s.fechaHora)}</td>
+                      <td>
+                        <InsigniaEstado estilo={estiloMagnitud(s.magnitud)}>{formatearMagnitud(s.magnitud)}</InsigniaEstado>
+                      </td>
+                      <td>{s.municipio ? `${s.municipio} (${s.departamento ?? ''})` : (s.departamento ?? '—')}</td>
+                      <td>{ETIQUETAS_FUENTE[s.fuente]}</td>
+                      <td className="text-right">
+                        <Boton variante="secundario" tamano="sm" onClick={() => alElegir(s.idSismo)} aria-label={`Ver réplicas del sismo del ${formatearFechaHora(s.fechaHora)}`}>
+                          Ver réplicas
+                        </Boton>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Paginacion pagina={r.pagina} tamano={r.tamano} total={r.total} alCambiar={setPagina} cargando={resultados.isFetching} />
+          </>
+        )}
+      </ContenidoConsulta>
+    </div>
+  );
+}
+
 export default function PaginaReplicas() {
   const { rol } = useSesion();
   const esAdmin = rol === 'ADMIN';
-  const idSelector = useId();
-  const [elegido, setElegido] = useState<number | null>(null);
+  const [parametros, setParametros] = useSearchParams();
   const principales = useQuery({ queryKey: claves.replicas, queryFn: apiReplicas.principales });
-  const idSismo = elegido ?? principales.data?.[0]?.idSismo ?? null;
+  const delParametro = Number(parametros.get(PARAMETRO_SISMO));
+  const idSismo = Number.isInteger(delParametro) && delParametro > 0 ? delParametro : (principales.data?.[0]?.idSismo ?? null);
+
+  const elegir = (id: number) => {
+    setParametros({ [PARAMETRO_SISMO]: String(id) });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <>
       <AvisoAlcance texto={AVISO_PRONOSTICO} />
       <Tarjeta
-        titulo="Sismo principal"
-        descripcion="Sismos con M ≥ 6 del catálogo instrumental (SGC y USGS reciente) que no son réplica de otro mayor"
+        titulo="Sismos fuertes recientes"
+        descripcion="Sismos de magnitud 6 o más que no son réplica de otro mayor"
         acciones={esAdmin ? <Recalcular /> : undefined}
       >
-        <ContenidoConsulta
-          consulta={principales}
-          alto="h-12"
-          esVacio={(l) => l.length === 0}
-          vacio={<EstadoVacio titulo="No hay pronósticos de réplicas todavía">Se calculan después de cada carga o sincronización.</EstadoVacio>}
-        >
-          {(lista: ResumenPrincipal[]) => (
-            <div className="w-full max-w-2xl">
-              <label htmlFor={idSelector} className="mb-1 block text-sm font-medium text-tinta-secundaria">
-                Sismo
-              </label>
-              <Selector id={idSelector} value={idSismo ?? ''} onChange={(e) => setElegido(Number(e.target.value))}>
-                {lista.map((s) => (
-                  <option key={s.idSismo} value={s.idSismo}>
-                    {nombrePrincipal(s)} · P(M≥4 en 7 d) {formatearPorcentaje(s.probabilidad7dM4)}
-                  </option>
-                ))}
-              </Selector>
-            </div>
-          )}
-        </ContenidoConsulta>
+        <SismosFuertes alElegir={elegir} elegido={idSismo} />
       </Tarjeta>
       {idSismo !== null && <Detalle idSismo={idSismo} esAdmin={esAdmin} />}
+      <Tarjeta titulo="Buscar otro sismo" descripcion={`Cualquier sismo del SGC o de USGS de magnitud ${MAGNITUD_MIN_REPLICAS} o más`}>
+        <BuscadorSismos alElegir={elegir} elegido={idSismo} />
+      </Tarjeta>
       <AvisoAlcance texto={AVISO_PRONOSTICO} />
     </>
   );

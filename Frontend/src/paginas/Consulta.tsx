@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { apiSismos, claves } from '@/api/endpoints';
-import type { FiltrosSismos } from '@/api/tipos';
-import { DatoClave, Tarjeta } from '@/componentes/ui/Basicos';
+import type { FiltrosSismos, PuntoMapa } from '@/api/tipos';
+import { DatoClave, EnlaceBoton, Tarjeta } from '@/componentes/ui/Basicos';
 import { ContenidoConsulta, EstadoVacio } from '@/componentes/ui/Estados';
 import { HistogramaMagnitud } from '@/graficas/HistogramaMagnitud';
 import { MapaColombia } from '@/graficas/MapaColombia';
-import { formatearEntero, formatearFecha, formatearMagnitud, formatearProfundidad } from '@/lib/formato';
+import { formatearEntero, formatearFecha, formatearFechaHora, formatearMagnitud, formatearProfundidad } from '@/lib/formato';
+import { admiteReplicas, rutaReplicas } from '@/lib/replicas';
 import { FormularioFiltros } from './consulta/FormularioFiltros';
 import { TablaSismos } from './consulta/TablaSismos';
 
@@ -14,6 +15,7 @@ const FILTROS_INICIALES: FiltrosSismos = { incluirAnomalos: false };
 
 export default function PaginaConsulta() {
   const [filtros, setFiltros] = useState<FiltrosSismos>(FILTROS_INICIALES);
+  const [punto, setPunto] = useState<PuntoMapa | null>(null);
 
   const departamentos = useQuery({ queryKey: claves.departamentos, queryFn: apiSismos.departamentos, staleTime: Infinity });
   const estadisticas = useQuery({
@@ -59,7 +61,19 @@ export default function PaginaConsulta() {
                 descripcion={`${formatearEntero(e.puntos.length)} eventos con ubicación (se priorizan las magnitudes mayores)`}
                 className="xl:col-span-3"
               >
-                <MapaColombia puntos={e.puntos} departamentoResaltado={filtros.departamento} />
+                <MapaColombia puntos={e.puntos} departamentoResaltado={filtros.departamento} alSeleccionarPunto={setPunto} />
+                {punto && (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-borde bg-fondo px-3 py-2 text-sm" aria-live="polite">
+                    <span>
+                      <strong>{formatearMagnitud(punto.magnitud)}</strong> · {formatearFechaHora(punto.fechaHora)} · {punto.municipio ?? 'sin municipio'}
+                    </span>
+                    {admiteReplicas(punto) ? (
+                      <EnlaceBoton to={rutaReplicas(punto.idSismo)}>Ver réplicas</EnlaceBoton>
+                    ) : (
+                      <span className="text-xs text-tinta-tenue">Sin pronóstico de réplicas (solo sismos SGC o USGS de magnitud 4 o más)</span>
+                    )}
+                  </div>
+                )}
               </Tarjeta>
               <div className="space-y-4 xl:col-span-2">
                 <Tarjeta titulo="Distribución de magnitudes" descripcion="Intervalos de 0,5">

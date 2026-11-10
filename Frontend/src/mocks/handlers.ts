@@ -23,7 +23,7 @@ import type {
 import { FUENTES } from '@/api/tipos';
 import { URL_API } from '@/config';
 import { probabilidadPoisson } from '@/lib/analisis';
-import { detalleReplicas, escenarioSimulado, MAPA_AMENAZA, REPORTE_MODELO_V2, PERIODOS_RETORNO, PRINCIPALES_REPLICAS, pronosticoActividad } from './pronosticos';
+import { detalleReplicas, escenarioSimulado, replicasGenericas, MAPA_AMENAZA, REPORTE_MODELO_V2, PERIODOS_RETORNO, PRINCIPALES_REPLICAS, pronosticoActividad } from './pronosticos';
 import { calcularEstadisticas, calcularFrecuencia, calcularGR, filtrarSismos } from './calculos';
 import {
   ADVERTENCIAS,
@@ -213,6 +213,18 @@ export const handlers = [
   http.get(ruta('/api/replicas'), ({ request }) => {
     const u = autorizar(request);
     return u instanceof Response ? u : HttpResponse.json(PRINCIPALES_REPLICAS);
+  }),
+
+  http.get(ruta('/api/replicas/sismo/:id'), ({ request, params }) => {
+    const u = autorizar(request);
+    if (u instanceof Response) return u;
+    const id = Number(params.id);
+    const sismo = SISMOS.find((s) => s.idSismo === id);
+    const guardado = detalleReplicas(id);
+    if (guardado) return HttpResponse.json({ ...guardado, metodo: guardado.pronostico.metodo, advertencia: null, origen: 'GUARDADO' });
+    if (!sismo) return error(404, 'No existe el sismo en el catálogo instrumental');
+    if ((sismo.magnitud ?? 0) < 4) return error(422, 'El pronóstico de réplicas solo se calcula para sismos de magnitud 4 o mayor.');
+    return HttpResponse.json(replicasGenericas(sismo));
   }),
 
   http.get(ruta('/api/replicas/:id'), ({ request, params }) => {

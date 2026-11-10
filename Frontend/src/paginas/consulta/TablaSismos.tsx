@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { mensajeDeError } from '@/api/cliente';
 import { apiSismos, claves } from '@/api/endpoints';
 import type { FiltrosSismos, OrdenSismos, Sismo } from '@/api/tipos';
-import { Alerta, Boton, Insignia, InsigniaEstado } from '@/componentes/ui/Basicos';
+import { Alerta, Boton, EnlaceBoton, Insignia, InsigniaEstado } from '@/componentes/ui/Basicos';
 import { ContenidoConsulta, EstadoVacio } from '@/componentes/ui/Estados';
 import { IconoCentroide, IconoDescarga, IconoOrden } from '@/componentes/ui/Iconos';
 import { Paginacion } from '@/componentes/ui/Paginacion';
@@ -11,6 +11,7 @@ import { TAMANO_PAGINA_POR_DEFECTO } from '@/config';
 import { descargarBlob } from '@/lib/descargas';
 import { estiloMagnitud, estiloNivelImpacto } from '@/lib/escalasColor';
 import { ETIQUETAS_FUENTE } from '@/lib/etiquetas';
+import { admiteReplicas, rutaReplicas } from '@/lib/replicas';
 import { fechaIsoBogota, formatearFechaHora, formatearMagnitud, formatearProfundidad } from '@/lib/formato';
 
 type Columna = 'fecha' | 'magnitud';
@@ -67,6 +68,13 @@ function FilaSismo({ sismo }: { sismo: Sismo }) {
           {sismo.esAnomalo && <Insignia>Anómalo: {sismo.motivoAnomalia ?? 'sin motivo'}</Insignia>}
         </div>
       </td>
+      <td className="text-right">
+        {admiteReplicas(sismo) && (
+          <EnlaceBoton to={rutaReplicas(sismo.idSismo)} aria-label={`Ver réplicas del sismo del ${formatearFechaHora(sismo.fechaHora)}`}>
+            Ver réplicas
+          </EnlaceBoton>
+        )}
+      </td>
     </tr>
   );
 }
@@ -115,7 +123,7 @@ export function TablaSismos({ filtros }: { filtros: FiltrosSismos }) {
         {(datos) => (
           <>
             <div className="overflow-x-auto" aria-busy={consulta.isFetching}>
-              <table className="tabla min-w-[56rem]">
+              <table className="tabla min-w-[62rem]">
                 <caption className="sr-only">Sismos registrados, ordenados por {orden.startsWith('fecha') ? 'fecha' : 'magnitud'}</caption>
                 <thead>
                   <tr>
@@ -130,6 +138,9 @@ export function TablaSismos({ filtros }: { filtros: FiltrosSismos }) {
                     <th scope="col">Municipio</th>
                     <th scope="col">Fuente</th>
                     <th scope="col">Observaciones</th>
+                    <th scope="col">
+                      <span className="sr-only">Réplicas</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className={consulta.isPlaceholderData ? 'opacity-60' : undefined}>

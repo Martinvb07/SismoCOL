@@ -153,12 +153,16 @@ export interface FiltrosSismos {
   desde?: string;
   hasta?: string;
   departamento?: string;
+  /** Búsqueda parcial por nombre de municipio. */
+  municipio?: string;
   magMin?: number;
   magMax?: number;
   profMin?: number;
   profMax?: number;
   fuente?: Fuente;
   incluirAnomalos?: boolean;
+  /** Solo SGC y USGS (los que admiten pronóstico de réplicas). */
+  instrumental?: boolean;
 }
 
 export interface PuntoMapa {
@@ -169,6 +173,7 @@ export interface PuntoMapa {
   profundidadKm: number;
   fechaHora: string;
   municipio: string | null;
+  fuente: Fuente;
 }
 
 export interface BinHistograma {
@@ -525,7 +530,8 @@ export interface ParametrosReplicas {
 }
 
 export interface PronosticoReplicas {
-  idPronostico: number;
+  /** null en los pronósticos calculados al vuelo (no se guardan). */
+  idPronostico: number | null;
   tipo: TipoPronosticoReplicas;
   horasAjuste: number | null;
   inicioAjuste: string;
@@ -553,6 +559,14 @@ export interface DetalleReplicas {
   pronostico: PronosticoReplicas;
   /** Última validación retrospectiva: una entrada por ventana de ajuste (24 h, 72 h, 7 d). */
   validacion: PronosticoReplicas[];
+}
+
+/** Pronóstico de cualquier sismo M ≥ 4 (GET /api/replicas/sismo/:id). */
+export interface RespuestaReplicasSismo extends DetalleReplicas {
+  metodo: MetodoReplicas;
+  /** Texto simple cuando el método es genérico o el sismo puede ser réplica de otro mayor. */
+  advertencia: string | null;
+  origen: 'GUARDADO' | 'CALCULADO' | 'CACHE';
 }
 
 export interface RespuestaValidacionReplicas {

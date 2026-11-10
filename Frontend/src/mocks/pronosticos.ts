@@ -3,6 +3,8 @@
  * No son resultados: los valores reales los calcula Analytics con el catálogo cargado.
  */
 import type {
+  RespuestaReplicasSismo,
+  Sismo,
   CabeceraAmenaza,
   MunicipioEscenario,
   ReporteEntrenamiento,
@@ -365,5 +367,28 @@ export function escenarioSimulado(e: { magnitud: number; profundidadKm: number; 
     modelo: { idModelo: 2, version: 'v1.1.0', algoritmo: 'LightGBM + variables nuevas' },
     modeloUsaDistancia: true,
     municipios,
+  };
+}
+
+/** Pronóstico genérico simulado para un sismo cualquiera (sin réplicas registradas). */
+export function replicasGenericas(s: Sismo): RespuestaReplicasSismo {
+  const base = pronostico('PRONOSTICO', 24, 99);
+  return {
+    principal: {
+      idSismo: s.idSismo,
+      fechaHora: s.fechaHora,
+      magnitud: s.magnitud ?? 4,
+      profundidadKm: s.profundidadKm,
+      latitud: s.latitud ?? 0,
+      longitud: s.longitud ?? 0,
+      municipio: s.municipio,
+      departamento: s.departamento,
+      fuente: s.fuente,
+    },
+    pronostico: { ...base, idPronostico: null, metodo: 'GENERICO', nReplicas: 0 },
+    validacion: [],
+    metodo: 'GENERICO',
+    advertencia: 'Casi no hay réplicas registradas de este sismo, así que el cálculo usa valores típicos de otras regiones del mundo.',
+    origen: 'CALCULADO',
   };
 }

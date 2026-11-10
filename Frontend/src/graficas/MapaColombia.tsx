@@ -22,6 +22,8 @@ interface Props {
   marcador?: { latitud: number; longitud: number } | null;
   etiqueta?: string;
   mostrarLeyenda?: boolean;
+  /** Si se define, el clic (o Enter) en un sismo lo selecciona. */
+  alSeleccionarPunto?: (punto: PuntoMapa) => void;
 }
 
 const ALTO_POR_DEFECTO = 480;
@@ -41,6 +43,7 @@ export function MapaColombia({
   marcador,
   etiqueta,
   mostrarLeyenda = true,
+  alSeleccionarPunto,
 }: Props) {
   const geo = useDepartamentosGeo();
   const { tooltip, mostrar, ocultar } = useTooltip<PuntoMapa>();
@@ -71,6 +74,7 @@ export function MapaColombia({
               <FilaTooltip etiqueta="Fecha" valor={formatearFechaHora(tooltip.dato.fechaHora)} />
               <FilaTooltip etiqueta="Magnitud" valor={formatearMagnitud(tooltip.dato.magnitud)} />
               <FilaTooltip etiqueta="Profundidad" valor={formatearProfundidad(tooltip.dato.profundidadKm)} />
+              {alSeleccionarPunto && <p className="mt-1 text-tinta-tenue">Clic para ver sus réplicas</p>}
             </Tooltip>
           )
         }
@@ -123,6 +127,16 @@ export function MapaColombia({
                       strokeWidth={0.75}
                       onMouseMove={(e) => mostrar(e, p)}
                       onMouseLeave={ocultar}
+                      {...(alSeleccionarPunto && {
+                        className: 'cursor-pointer',
+                        role: 'button',
+                        tabIndex: 0,
+                        'aria-label': `Sismo ${formatearMagnitud(p.magnitud)} del ${formatearFechaHora(p.fechaHora)}`,
+                        onClick: () => alSeleccionarPunto(p),
+                        onKeyDown: (e: React.KeyboardEvent) => {
+                          if (e.key === 'Enter' || e.key === ' ') alSeleccionarPunto(p);
+                        },
+                      })}
                     />
                   );
                 })}

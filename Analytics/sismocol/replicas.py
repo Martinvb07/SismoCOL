@@ -33,6 +33,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 
@@ -66,6 +67,21 @@ DIAS_PRECURSOR = 1.0  # un sismo menor hasta 1 día antes de uno mayor cercano e
 
 class SinPrincipal(LookupError):
     pass
+
+
+class MagnitudInsuficiente(ValueError):
+    pass
+
+
+MAGNITUD_MIN_CONSULTA = 4.0      # pronóstico al vuelo para cualquier sismo del registro
+SEGUNDOS_PARA_CACHE = 2.0        # los cálculos más lentos se guardan en memoria
+MAX_CACHE = 256
+ADVERTENCIAS_METODO = {
+    "GENERICO": ("Casi no hay réplicas registradas de este sismo, así que el cálculo usa valores típicos de otras "
+                 "regiones del mundo. Tómelo como una referencia general, no como algo propio de este sismo."),
+    "GENERICO_A_SECUENCIA": ("Hay pocas réplicas registradas de este sismo: el cálculo combina lo observado con valores "
+                             "típicos de otras regiones, así que es menos preciso."),
+}
 
 
 # ─── Matemática (sin acceso a datos) ────────────────────────────────────────
@@ -430,6 +446,19 @@ def _fila(principal: pd.Series, tipo: str, horas: float | None, par: ParametrosR
 _calculando = threading.Lock()
 
 
+def _calcular(cat: pd.DataFrame, p: pd.Series, magnitud_min: float) -> tuple[ParametrosRJ, dict, dict]:
+    """Ajuste (MLE, genérico con a de la secuencia o genérico) y pronóstico desde el último dato disponible."""
+    ctx = _contexto(cat, p, magnitud_min)
+    seq, t_datos = ctx["secuencia"], ctx["t_datos"]
+    rng = np.random.default_rng(SEMILLA)
+    par = ajustar_reasenberg_jones(seq.dias.to_numpy(), seq.magnitud.to_numpy(), float(p.magnitud), t_datos)
+    resultados = {
+        "horizontes": pronosticar(par, t_datos, rng),
+        "curva": curva(par, seq.dias.to_numpy(), seq.magnitud.to_numpy(), t_datos, t_datos, max(t_datos, 1.0) + 30, rng),
+    }
+    return par, ctx, resultados
+
+
 def recalcular(url: str, magnitud_min: float) -> dict[str, object]:
     """Pronóstico vigente de cada sismo principal ≥ magnitud_min, desde el último dato disponible."""
     if not _calculando.acquire(blocking=False):
@@ -441,14 +470,8 @@ def recalcular(url: str, magnitud_min: float) -> dict[str, object]:
         ahora = _ahora()
         filas = []
         for _, p in principales(cat, magnitud_min).iterrows():
-            ctx = _contexto(cat, p, magnitud_min)
-            seq, t_datos = ctx["secuencia"], ctx["t_datos"]
-            rng = np.random.default_rng(SEMILLA)
-            par = ajustar_reasenberg_jones(seq.dias.to_numpy(), seq.magnitud.to_numpy(), float(p.magnitud), t_datos)
-            resultados = {
-                "horizontes": pronosticar(par, t_datos, rng),
-                "curva": curva(par, seq.dias.to_numpy(), seq.magnitud.to_numpy(), t_datos, t_datos, t_datos + 30, rng),
-            }
+            par, ctx, resultados = _calcular(cat, p, magnitud_min)
+            t_datos = ctx["t_datos"]
             filas.append(_fila(p, "PRONOSTICO", t_datos * 24, par, ctx["parametros"], resultados,
                                p.fecha_hora, cat.fecha_hora.max(), ahora))
         if filas:
@@ -555,3 +578,85 @@ def detalle(url: str, id_sismo: int) -> dict[str, object]:
     if pron is None:
         raise SinPrincipal(f"El sismo {id_sismo} no tiene pronóstico de réplicas")
     return {"principal": _sismo(url, id_sismo), "pronostico": _a_dict(pron), "validacion": [_a_dict(v) for v in validacion]}
+
+
+# ─── Pronóstico al vuelo para cualquier sismo ───────────────────────────────
+
+_cache: dict[tuple[int, str], dict[str, object]] = {}
+_cache_lock = threading.Lock()
+
+
+def _validaciones(url: str, id_sismo: int) -> list[dict[str, object]]:
+    t = db.tablas(url)["pronostico_replicas"]
+    with db.motor(url).connect() as c:
+        fecha = c.execute(select(t.c.fecha_calculo).where(t.c.id_sismo_principal == id_sismo, t.c.tipo == "VALIDACION")
+                          .order_by(t.c.fecha_calculo.desc()).limit(1)).scalar()
+        if fecha is None:
+            return []
+        filas = c.execute(select(t).where(t.c.id_sismo_principal == id_sismo, t.c.tipo == "VALIDACION",
+                                          t.c.fecha_calculo == fecha).order_by(t.c.horas_ajuste)).all()
+    return [_a_dict(f) for f in filas]
+
+
+def _posible_replica(cat: pd.DataFrame, p: pd.Series) -> pd.Series | None:
+    """Sismo mayor anterior en cuya ventana de Gardner-Knopoff cae este (es decir, podría ser su réplica)."""
+    mayores = cat[(cat.magnitud > p.magnitud) & (cat.fecha_hora < p.fecha_hora)]
+    if mayores.empty:
+        return None
+    distancia, duracion = sismologia.ventana_gardner_knopoff(mayores.magnitud.to_numpy())
+    dias = (p.fecha_hora - mayores.fecha_hora).dt.total_seconds().to_numpy() / 86400
+    km = haversine_km(p.latitud, p.longitud, mayores.latitud.to_numpy(), mayores.longitud.to_numpy())
+    dentro = (dias <= duracion) & (km <= distancia)
+    return mayores[dentro].sort_values("magnitud").iloc[-1] if dentro.any() else None
+
+
+def pronostico_sismo(url: str, id_sismo: int, magnitud_min: float) -> dict[str, object]:
+    """Pronóstico de réplicas de cualquier sismo SGC o USGS con M ≥ 4, desde el último dato disponible.
+
+    Si el sismo ya tiene un pronóstico guardado (es un principal M ≥ magnitud_min), se devuelve ese. Si no,
+    se calcula al vuelo con la misma lógica de recalcular() y no se guarda en la base; si el cálculo tarda más
+    de SEGUNDOS_PARA_CACHE, el resultado se guarda en memoria hasta que lleguen datos nuevos."""
+    try:
+        guardado = detalle(url, id_sismo)
+    except SinPrincipal:
+        guardado = None
+    if guardado is not None:
+        metodo = guardado["pronostico"]["metodo"]
+        return {**guardado, "metodo": metodo, "advertencia": ADVERTENCIAS_METODO.get(metodo), "origen": "GUARDADO"}
+
+    cat = catalogo_instrumental(url)
+    p = _principal_por_id(cat, id_sismo)
+    if float(p.magnitud) < MAGNITUD_MIN_CONSULTA - 1e-9:
+        raise MagnitudInsuficiente(f"El pronóstico de réplicas solo se calcula para sismos de magnitud "
+                                   f"{MAGNITUD_MIN_CONSULTA:g} o mayor (este es de {float(p.magnitud):.1f}).")
+    llave = (int(id_sismo), _iso(cat.fecha_hora.max()))
+    with _cache_lock:
+        if llave in _cache:
+            return {**_cache[llave], "validacion": _validaciones(url, id_sismo), "origen": "CACHE"}
+
+    inicio = time.perf_counter()
+    par, ctx, resultados = _calcular(cat, p, magnitud_min)
+    ahora = _ahora()
+    advertencias = [ADVERTENCIAS_METODO[par.metodo]] if par.metodo in ADVERTENCIAS_METODO else []
+    mayor = _posible_replica(cat, p)
+    if mayor is not None:
+        advertencias.append(f"Este sismo podría ser una réplica de uno mayor (magnitud {float(mayor.magnitud):.1f} del "
+                            f"{pd.Timestamp(mayor.fecha_hora):%d/%m/%Y}); sus propias réplicas se mezclan con las de ese sismo.")
+    pronostico = {
+        "idPronostico": None, "tipo": "PRONOSTICO", "horasAjuste": round(ctx["t_datos"] * 24, 2),
+        "inicioAjuste": _iso(p.fecha_hora), "finAjuste": _iso(cat.fecha_hora.max()), "metodo": par.metodo,
+        "nReplicas": par.n_replicas, "mc": round(par.mc, 1), "a": round(par.a, 4), "b": round(par.b, 4),
+        "p": round(par.p, 4), "c": round(par.c, 5),
+        "parametros": {**ctx["parametros"], **_resumen_parametros(par)}, "resultados": resultados,
+        "fechaCalculo": _iso(ahora),
+    }
+    respuesta = {"principal": _sismo(url, id_sismo), "pronostico": json.loads(_json(pronostico)),
+                 "metodo": par.metodo, "advertencia": " ".join(advertencias) or None}
+    duracion = time.perf_counter() - inicio
+    if duracion > SEGUNDOS_PARA_CACHE:
+        with _cache_lock:
+            if len(_cache) >= MAX_CACHE:
+                _cache.pop(next(iter(_cache)))
+            _cache[llave] = respuesta
+    log.info("Pronóstico de réplicas al vuelo del sismo %d: %s en %.2f s", id_sismo, par.metodo, duracion)
+    return {**respuesta, "validacion": _validaciones(url, id_sismo), "origen": "CALCULADO"}

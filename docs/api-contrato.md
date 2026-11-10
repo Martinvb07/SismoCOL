@@ -87,10 +87,12 @@ interface ConfiguracionAnalisis {
 Filtros comunes (query, todos opcionales):
 - `desde` y `hasta`, como fecha `YYYY-MM-DD` en hora Colombia;
 - `departamento`;
+- `municipio` (búsqueda parcial por nombre);
 - `magMin` y `magMax`;
 - `profMin` y `profMax`;
 - `fuente` (sin este filtro se excluye `USGS_HIST`, que solo se ve si se pide explícitamente);
-- `incluirAnomalos`: `true` o `false`; por defecto `false`.
+- `incluirAnomalos`: `true` o `false`; por defecto `false`;
+- `instrumental`: `true` limita a SGC y USGS (los sismos que admiten pronóstico de réplicas).
 
 | Método | Ruta | Rol | Respuesta |
 |---|---|---|---|
@@ -106,7 +108,7 @@ interface Estadisticas {
   porDepartamento: Array<{ departamento: string; total: number; magnitudMax: number }>;
   histograma: Array<{ desde: number; hasta: number; total: number }>; // bins de 0,5: [desde, hasta), el último cerrado
   puntos: Array<{ idSismo: number; latitud: number; longitud: number; magnitud: number;
-                  profundidadKm: number; fechaHora: string; municipio: string | null }>;
+                  profundidadKm: number; fechaHora: string; municipio: string | null; fuente: Fuente }>;
   // puntos: como máximo 5000, priorizando las magnitudes mayores
 }
 ```
@@ -200,6 +202,7 @@ Reasenberg-Jones por sismo principal (M ≥ 6 configurable con `REPLICAS_MAGNITU
 | Método | Ruta | Rol | Cuerpo / respuesta |
 |---|---|---|---|
 | GET | `/api/replicas` | Usuario | `ResumenPrincipal[]` del último cálculo (más reciente primero) |
+| GET | `/api/replicas/sismo/:id` | Usuario | Pronóstico de réplicas de **cualquier** sismo SGC o USGS con M ≥ 4, desde el último dato disponible: `DetalleReplicas & { metodo: MetodoReplicas; advertencia: string \| null; origen: 'GUARDADO' \| 'CALCULADO' \| 'CACHE' }`. Si el sismo es un principal guardado, se devuelve ese; si no, se calcula al vuelo sin guardarlo (en memoria si tardó más de 2 s). `advertencia` es texto simple cuando el método es genérico o el sismo puede ser réplica de otro mayor. `404` si no existe en el catálogo instrumental, `422` si M < 4 |
 | GET | `/api/replicas/:id` | Usuario | `DetalleReplicas` · `404` si el sismo no tiene pronóstico |
 | POST | `/api/replicas/recalcular` | Admin | `201 { estado: 'listo' \| 'en_curso' \| 'sin_datos', principales?: number }`. También se recalcula después de cada carga o sincronización |
 | POST | `/api/replicas/:id/validar` | Admin | Validación retrospectiva con 24 h, 72 h y 7 días de ajuste → `201 { idSismo, resumen, resumenGenerico, ventanas }` |

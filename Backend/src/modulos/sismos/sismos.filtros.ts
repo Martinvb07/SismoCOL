@@ -14,12 +14,15 @@ export const esquemaFiltros = z
     desde: fecha.optional(),
     hasta: fecha.optional(),
     departamento: z.string().trim().min(1).max(60).optional(),
+    municipio: z.string().trim().min(1).max(80).optional(),
     magMin: numero.min(0).max(10).optional(),
     magMax: numero.min(0).max(10).optional(),
     profMin: numero.min(-10).max(1000).optional(),
     profMax: numero.min(-10).max(1000).optional(),
     fuente: z.enum(FuenteDato).optional(),
     incluirAnomalos: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
+    /** Solo catálogos instrumentales (SGC y USGS): los que admiten pronóstico de réplicas. */
+    instrumental: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   })
   .refine((f) => !f.desde || !f.hasta || f.desde <= f.hasta, { message: '"desde" no puede ser posterior a "hasta"', path: ['desde'] })
   .refine((f) => f.magMin === undefined || f.magMax === undefined || f.magMin <= f.magMax, {
@@ -49,8 +52,14 @@ export function construirWhere(f: FiltrosSismos): Prisma.RegistroSismicoWhereInp
     };
   }
   if (f.departamento) where.departamento = f.departamento;
+  if (f.municipio) where.municipio = { contains: f.municipio };
   // El catálogo histórico USGS_HIST (D14) solo se muestra si se pide explícitamente.
-  where.fuente = f.fuente ?? { not: FuenteDato.USGS_HIST };
+  if (f.instrumental) {
+    const instrumentales: FuenteDato[] = [FuenteDato.SGC, FuenteDato.USGS];
+    where.fuente = { in: f.fuente ? instrumentales.filter((x) => x === f.fuente) : instrumentales };
+  } else {
+    where.fuente = f.fuente ?? { not: FuenteDato.USGS_HIST };
+  }
   if (f.magMin !== undefined || f.magMax !== undefined) {
     where.magnitud = { ...(f.magMin !== undefined && { gte: f.magMin }), ...(f.magMax !== undefined && { lte: f.magMax }) };
   }

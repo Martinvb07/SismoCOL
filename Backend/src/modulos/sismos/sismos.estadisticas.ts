@@ -84,6 +84,7 @@ export async function calcularEstadisticas(where: Prisma.RegistroSismicoWhereInp
         profundidadKm: true,
         fechaHora: true,
         municipio: true,
+        fuente: true,
       },
       orderBy: [{ magnitud: 'desc' }, { idSismo: 'asc' }],
       take: MAX_PUNTOS,
@@ -117,6 +118,7 @@ export async function calcularEstadisticas(where: Prisma.RegistroSismicoWhereInp
       profundidadKm: aNumero(p.profundidadKm) as number,
       fechaHora: p.fechaHora.toISOString(),
       municipio: p.municipio,
+      fuente: p.fuente,
     })),
   };
 }

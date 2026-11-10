@@ -50,6 +50,12 @@ describe('pantallas con datos simulados', () => {
     expect(await screen.findByRole('table', { name: /Sismos registrados/ }, ESPERA)).toBeInTheDocument();
     expect(await screen.findByRole('img', { name: /Mapa de Colombia con/ }, ESPERA)).toBeInTheDocument();
 
+    // «Ver réplicas» desde la tabla abre Réplicas con ese sismo (?sismo=id)
+    await usuario.click(within(screen.getByRole('table', { name: /Sismos registrados/ })).getByRole('button', { name: /Magnitud/ }));
+    const verReplicas = await screen.findAllByRole('link', { name: /Ver réplicas del sismo/ }, ESPERA);
+    expect(verReplicas.length).toBeGreaterThan(0);
+    expect(verReplicas[0]).toHaveAttribute('href', expect.stringMatching(/^\/replicas\?sismo=\d+$/));
+
     // Análisis
     await irA(usuario, 'Análisis y advertencias');
     expect(screen.getAllByText(AVISO_ALCANCE).length).toBeGreaterThan(0);
@@ -72,6 +78,12 @@ describe('pantallas con datos simulados', () => {
     expect((await screen.findAllByRole('img', { name: /Réplicas acumuladas/ }, ESPERA)).length).toBe(2);
     expect(screen.getByText('Modelo ajustado')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Ejecutar validación/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /M 7,4/ })).toHaveAttribute('aria-pressed', 'true');
+    await usuario.click(screen.getByRole('button', { name: 'Buscar' }));
+    const encontrados = await screen.findByRole('table', { name: /Sismos encontrados/ }, ESPERA);
+    const botones = within(encontrados).getAllByRole('button', { name: /Ver réplicas/ });
+    await usuario.click(botones[0] as HTMLElement);
+    expect(await screen.findByText(/Método: /i, {}, ESPERA)).toBeInTheDocument();
 
     // Predicción
     await irA(usuario, 'Predicción de impacto');

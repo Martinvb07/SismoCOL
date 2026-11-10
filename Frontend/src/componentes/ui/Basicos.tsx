@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Link, type LinkProps } from 'react-router-dom';
 import type { EstiloEstado } from '@/lib/escalasColor';
 import { IconoAlerta, IconoCheck, IconoInfo } from './Iconos';
 
@@ -55,6 +56,17 @@ interface PropsBoton extends ButtonHTMLAttributes<HTMLButtonElement> {
   variante?: VarianteBoton;
   cargando?: boolean;
   tamano?: 'sm' | 'md';
+}
+
+/** Enlace interno con el aspecto de un botón (navega; no ejecuta acciones). */
+export function EnlaceBoton({ variante = 'secundario', tamano = 'sm', className = '', ...props }: LinkProps & { variante?: VarianteBoton; tamano?: 'sm' | 'md' }) {
+  const relleno = tamano === 'sm' ? 'px-3 py-1.5 text-sm' : 'px-4 py-2.5 text-sm';
+  return (
+    <Link
+      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-all duration-200 ${relleno} ${CLASES_VARIANTE[variante]} ${className}`}
+      {...props}
+    />
+  );
 }
 
 export function Boton({

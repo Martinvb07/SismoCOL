@@ -157,3 +157,10 @@ Reemplaza en parte a D7 (construcción de los ejemplos) y amplía las variables 
 - Si falta una fuente (SGC o DesInventar), el informe lo dice y deja la sección como pendiente en lugar de mostrar valores.
 - La versión versionada del 2026-11-10 se generó en un entorno sin el Excel del SGC ni DesInventar, solo con datos públicos descargados (USGS histórico, USGS 2026 y UNGRD). Por eso las secciones 3 (pronóstico mensual) y 5 (modelo de impacto) quedaron pendientes y la validación de réplicas usa solo eventos USGS M ≥ 2,5.
 - En el servidor, con todos los datos cargados, hay que regenerarlo; la validación de réplicas con el SGC dará números distintos, porque su completitud es mayor.
+
+## D20 — Pronóstico de réplicas para cualquier sismo (2026-11-10)
+Además de los principales M ≥ 6 que se recalculan y guardan (D15), `GET /api/replicas/sismo/:id` da el pronóstico de cualquier sismo del SGC o de USGS con M ≥ 4.
+- **Cálculo:** con la misma lógica que el recálculo: máxima verosimilitud si hay ≥ 10 réplicas, genérico con `a` de la secuencia si hay de 3 a 9, y genérico de Reasenberg y Jones (1989) si hay menos. Siempre parte del último dato disponible.
+- **Caché:** si el sismo ya tiene un pronóstico guardado, se devuelve ese. Si no, se calcula al vuelo y no se guarda en la base. Si el cálculo tarda más de 2 s, se guarda en memoria con la clave (sismo, fecha del último dato), así que se invalida solo cuando llegan datos nuevos.
+- **Advertencia en texto simple** cuando el método es genérico, o cuando el sismo cae en la ventana de Gardner-Knopoff de uno mayor anterior (podría ser su réplica y sus réplicas se mezclan).
+- **Frontend:** la vista de réplicas busca sismos por fecha, departamento, municipio y magnitud mínima (`/api/sismos?instrumental=true`) y se abre con `?sismo=id`. Consulta enlaza «Ver réplicas» desde la tabla y desde el clic en el mapa. La validación retrospectiva (`POST /api/replicas/:id/validar`) sirve para cualquier sismo.
