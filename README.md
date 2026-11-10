@@ -18,7 +18,7 @@
   - probabilidad de ocurrencia (Poisson);
   - advertencias de actividad elevada.
 - **Catálogo histórico USGS** (M ≥ 4,5 desde 1973), separado del catálogo del SGC, para las tasas de sismos grandes.
-- **Pronóstico de réplicas** (Reasenberg-Jones / Omori-Utsu) de los sismos M ≥ 6 y, al consultar, de **cualquier sismo M ≥ 4** del SGC o USGS (buscador por fecha, departamento, municipio y magnitud; botón «Ver réplicas» en la consulta): probabilidad y número esperado de réplicas M ≥ 4, 5 y 6 en 24 h, 7 y 30 días, con IC 95 % y validación retrospectiva (p. ej. Chocó M 7,4, 10-ago-2026).
+- **Pronóstico de réplicas** (Reasenberg-Jones / Omori-Utsu) de los sismos M ≥ 6 y, al consultar, de **cualquier sismo** del SGC o USGS (buscador por fecha, departamento, municipio y magnitud; botón «Ver réplicas» en la consulta): probabilidad y número esperado de réplicas M ≥ 4, 5 y 6 en 24 h, 7 y 30 días, con IC 95 % y validación retrospectiva (p. ej. Chocó M 7,4, 10-ago-2026).
 - **Pronóstico de actividad mensual por zona** (y de todo el país) a 12 meses: SARIMA contra el modelo ingenuo y la media móvil, con backtesting por origen móvil (MAE, MAPE) y bandas del 80/95 %.
 - **Periodo de retorno y mapa de amenaza**: Tr de M 5, 6 y 7 por zona con Gutenberg-Richter, probabilidades de Poisson a 30 días y 1–50 años, y sismicidad suavizada (Frankel 1995) en celdas de 0,5°.
 - **Estimación del nivel de impacto** de un sismo hipotético: intensidad estimada (Allen, Wald y Worden 2012), población y vulnerabilidad de vivienda (DANE); comparación de modelos con validación cruzada, calibración, explicabilidad SHAP y **simulador de escenarios** para todos los municipios cercanos.

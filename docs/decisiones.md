@@ -177,3 +177,8 @@ Cada vista de analítica (Réplicas, Análisis y sus pestañas de pronóstico y 
 - **Gráficas:** el título dice la conclusión (por ejemplo, «Las réplicas disminuyen rápido después del sismo»), los ejes tienen unidades en español y las leyendas no usan siglas.
 - **Panel principal:** «¿Qué dice SismoCol hoy?» resume las zonas con advertencia, el último sismo fuerte con su probabilidad de réplicas a 7 días, la zona con mayor P(M ≥ 6 en 10 años) y los sismos esperados en todo el país. Para esto último, el pronóstico mensual (D16) calcula además la serie `Colombia` con todo el catálogo SGC.
 - **Avisos:** el aviso de alcance (RNF12) usa ahora palabras simples: «Esto es una estimación con datos históricos; no predice cuándo ni dónde ocurrirá un sismo».
+
+## D22 — Réplicas para todos los sismos del registro (2026-11-10)
+Cambia D20: el pronóstico al vuelo ya no exige M ≥ 4. Cualquier sismo del SGC o de USGS con magnitud se puede consultar; el mínimo queda configurable con `REPLICAS_MAGNITUD_MIN_CONSULTA` (por defecto 0).
+- Para los sismos de magnitud menor que 4 el cálculo cae casi siempre en el genérico y da probabilidades muy bajas (un M 3 tiene cerca de 1,4 % de probabilidad de una réplica de magnitud 4 o más en 7 días). La respuesta lo dice en texto simple: «Este sismo es pequeño: los sismos de esta magnitud casi nunca producen réplicas que se sientan».
+- La vista de réplicas empieza con «Elige un sismo»: los sismos fuertes destacados y debajo el listado paginado de **todos** los sismos, con filtros opcionales. Al elegir uno, la página baja hasta su pronóstico.

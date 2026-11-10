@@ -73,7 +73,7 @@ class MagnitudInsuficiente(ValueError):
     pass
 
 
-MAGNITUD_MIN_CONSULTA = 4.0      # pronóstico al vuelo para cualquier sismo del registro
+MAGNITUD_SENTIDA = 4.0           # por debajo, las réplicas casi nunca se sienten: se avisa en texto simple
 SEGUNDOS_PARA_CACHE = 2.0        # los cálculos más lentos se guardan en memoria
 MAX_CACHE = 256
 ADVERTENCIAS_METODO = {
@@ -610,8 +610,9 @@ def _posible_replica(cat: pd.DataFrame, p: pd.Series) -> pd.Series | None:
     return mayores[dentro].sort_values("magnitud").iloc[-1] if dentro.any() else None
 
 
-def pronostico_sismo(url: str, id_sismo: int, magnitud_min: float) -> dict[str, object]:
-    """Pronóstico de réplicas de cualquier sismo SGC o USGS con M ≥ 4, desde el último dato disponible.
+def pronostico_sismo(url: str, id_sismo: int, magnitud_min: float, magnitud_min_consulta: float = 0.0) -> dict[str, object]:
+    """Pronóstico de réplicas de cualquier sismo SGC o USGS (con magnitud ≥ magnitud_min_consulta; por defecto
+    todos), desde el último dato disponible.
 
     Si el sismo ya tiene un pronóstico guardado (es un principal M ≥ magnitud_min), se devuelve ese. Si no,
     se calcula al vuelo con la misma lógica de recalcular() y no se guarda en la base; si el cálculo tarda más
@@ -626,9 +627,9 @@ def pronostico_sismo(url: str, id_sismo: int, magnitud_min: float) -> dict[str, 
 
     cat = catalogo_instrumental(url)
     p = _principal_por_id(cat, id_sismo)
-    if float(p.magnitud) < MAGNITUD_MIN_CONSULTA - 1e-9:
+    if float(p.magnitud) < magnitud_min_consulta - 1e-9:
         raise MagnitudInsuficiente(f"El pronóstico de réplicas solo se calcula para sismos de magnitud "
-                                   f"{MAGNITUD_MIN_CONSULTA:g} o mayor (este es de {float(p.magnitud):.1f}).")
+                                   f"{magnitud_min_consulta:g} o mayor (este es de {float(p.magnitud):.1f}).")
     llave = (int(id_sismo), _iso(cat.fecha_hora.max()))
     with _cache_lock:
         if llave in _cache:
@@ -638,6 +639,8 @@ def pronostico_sismo(url: str, id_sismo: int, magnitud_min: float) -> dict[str, 
     par, ctx, resultados = _calcular(cat, p, magnitud_min)
     ahora = _ahora()
     advertencias = [ADVERTENCIAS_METODO[par.metodo]] if par.metodo in ADVERTENCIAS_METODO else []
+    if float(p.magnitud) < MAGNITUD_SENTIDA:
+        advertencias.insert(0, "Este sismo es pequeño: los sismos de esta magnitud casi nunca producen réplicas que se sientan.")
     mayor = _posible_replica(cat, p)
     if mayor is not None:
         advertencias.append(f"Este sismo podría ser una réplica de uno mayor (magnitud {float(mayor.magnitud):.1f} del "

@@ -38,6 +38,8 @@ class Ajustes(BaseSettings):
 
     # Pronóstico de réplicas (Reasenberg-Jones): magnitud mínima del sismo principal.
     replicas_magnitud_min: float = Field(default=6.0, ge=4.0, le=9.0)
+    # Magnitud mínima para consultar las réplicas de un sismo cualquiera (0 = todos los del registro).
+    replicas_magnitud_min_consulta: float = Field(default=0.0, ge=0.0, le=9.0)
 
     # Ingesta
     tamano_lote_insercion: int = Field(default=2000, ge=100, le=20000)

@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { mensajeDeError } from '@/api/cliente';
 import { apiReplicas, apiSismos, claves } from '@/api/endpoints';
@@ -19,16 +19,18 @@ import { DetalleTecnico, EnPalabrasSimples, Semaforo, Termino } from '@/componen
 import { Campo, Entrada, EntradaFecha, Selector } from '@/componentes/ui/Formulario';
 import { IconoRecargar } from '@/componentes/ui/Iconos';
 import { Paginacion } from '@/componentes/ui/Paginacion';
-import { AVISO_PRONOSTICO, TAMANO_PAGINA_POR_DEFECTO } from '@/config';
+import { AVISO_PRONOSTICO } from '@/config';
 import { CurvaReplicas } from '@/graficas/CurvaReplicas';
 import { estiloMagnitud } from '@/lib/escalasColor';
 import { ETIQUETAS_FUENTE, ETIQUETAS_METODO } from '@/lib/etiquetas';
-import { MAGNITUD_MIN_REPLICAS } from '@/lib/replicas';
+import { MAGNITUD_SISMO_FUERTE } from '@/lib/replicas';
 import { porcentajeSimple, resumenReplicas, tituloCurvaReplicas } from '@/lib/resumenes';
 import { explicacionSemaforo } from '@/umbralesSemaforo';
 import { formatearEntero, formatearFechaHora, formatearMagnitud, formatearNumero, formatearPorcentaje, formatearProfundidad } from '@/lib/formato';
 /** Parámetro de la URL con el sismo elegido: /replicas?sismo=123. */
 const PARAMETRO_SISMO = 'sismo';
+/** Filas por página del listado de sismos. */
+const TAMANO_LISTADO = 10;
 
 const ETIQUETAS_HORIZONTE: Record<HorizonteReplicas['horizonte'], string> = {
   '24h': 'Próximas 24 h',
@@ -371,10 +373,10 @@ function SismosFuertes({ alElegir, elegido }: { alElegir: (id: number) => void; 
 }
 
 function BuscadorSismos({ alElegir, elegido }: { alElegir: (id: number) => void; elegido: number | null }) {
-  const [filtros, setFiltros] = useState<FiltrosSismos>({ magMin: MAGNITUD_MIN_REPLICAS, instrumental: true });
+  const [filtros, setFiltros] = useState<FiltrosSismos>({ instrumental: true });
   const [pagina, setPagina] = useState(1);
   const departamentos = useQuery({ queryKey: claves.departamentos, queryFn: apiSismos.departamentos, staleTime: Infinity });
-  const paginacion = { pagina, tamano: TAMANO_PAGINA_POR_DEFECTO };
+  const paginacion = { pagina, tamano: TAMANO_LISTADO };
   const resultados = useQuery({
     queryKey: claves.sismos(filtros, paginacion, 'fecha_desc'),
     queryFn: () => apiSismos.listar(filtros, paginacion, 'fecha_desc'),
@@ -388,13 +390,13 @@ function BuscadorSismos({ alElegir, elegido }: { alElegir: (id: number) => void;
       const valor = datos.get(clave);
       return typeof valor === 'string' && valor.trim() ? valor.trim() : undefined;
     };
-    const magnitud = Number(datos.get('magMin'));
+    const magnitud = Number(texto('magMin'));
     setFiltros({
       desde: texto('desde'),
       hasta: texto('hasta'),
       departamento: texto('departamento'),
       municipio: texto('municipio'),
-      magMin: Number.isFinite(magnitud) ? Math.max(magnitud, MAGNITUD_MIN_REPLICAS) : MAGNITUD_MIN_REPLICAS,
+      magMin: texto('magMin') !== undefined && Number.isFinite(magnitud) ? magnitud : undefined,
       instrumental: true,
     });
     setPagina(1);
@@ -418,7 +420,7 @@ function BuscadorSismos({ alElegir, elegido }: { alElegir: (id: number) => void;
           )}
         </Campo>
         <Campo etiqueta="Municipio">{(p) => <Entrada {...p} name="municipio" placeholder="Ej.: Los Santos" />}</Campo>
-        <Campo etiqueta="Magnitud mínima" ayuda={`Desde ${MAGNITUD_MIN_REPLICAS}`}>
+        <Campo etiqueta="Magnitud mínima">
           {(p) => (
             <Entrada
               {...p}
@@ -426,9 +428,9 @@ function BuscadorSismos({ alElegir, elegido }: { alElegir: (id: number) => void;
               type="number"
               inputMode="decimal"
               step={0.1}
-              min={MAGNITUD_MIN_REPLICAS}
+              min={0}
               max={9}
-              defaultValue={MAGNITUD_MIN_REPLICAS}
+              placeholder="Todas"
             />
           )}
         </Campo>
@@ -443,7 +445,7 @@ function BuscadorSismos({ alElegir, elegido }: { alElegir: (id: number) => void;
           <>
             <div className="overflow-x-auto" aria-busy={resultados.isFetching}>
               <table className="tabla min-w-[40rem]">
-                <caption className="sr-only">Sismos encontrados para ver su pronóstico de réplicas</caption>
+                <caption className="sr-only">Sismos encontrados para ver su pronóstico de réplicas, del más reciente al más antiguo</caption>
                 <thead>
                   <tr>
                     <th scope="col">Fecha (hora Colombia)</th>
@@ -489,26 +491,47 @@ export default function PaginaReplicas() {
   const principales = useQuery({ queryKey: claves.replicas, queryFn: apiReplicas.principales });
   const delParametro = Number(parametros.get(PARAMETRO_SISMO));
   const idSismo = Number.isInteger(delParametro) && delParametro > 0 ? delParametro : (principales.data?.[0]?.idSismo ?? null);
+  const refDetalle = useRef<HTMLDivElement>(null);
+  const [irAlDetalle, setIrAlDetalle] = useState(false);
+
+  // Al elegir un sismo de la lista, la vista baja hasta su pronóstico.
+  useEffect(() => {
+    if (!irAlDetalle) return;
+    refDetalle.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    setIrAlDetalle(false);
+  }, [irAlDetalle, idSismo]);
 
   const elegir = (id: number) => {
     setParametros({ [PARAMETRO_SISMO]: String(id) });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setIrAlDetalle(true);
   };
 
   return (
     <>
       <AvisoAlcance texto={AVISO_PRONOSTICO} />
       <Tarjeta
-        titulo="Sismos fuertes recientes"
-        descripcion="Sismos de magnitud 6 o más que no son réplica de otro mayor. Elige uno para ver qué réplicas se esperan."
+        titulo="Elige un sismo"
+        descripcion="Todos los sismos del registro (Servicio Geológico Colombiano y USGS), del más reciente al más antiguo. Elige cualquiera para ver qué réplicas se esperan."
         acciones={esAdmin ? <Recalcular /> : undefined}
       >
-        <SismosFuertes alElegir={elegir} elegido={idSismo} />
+        <div className="space-y-5">
+          <section aria-labelledby="titulo-fuertes" className="space-y-2">
+            <h3 id="titulo-fuertes" className="text-sm font-semibold text-tinta-secundaria">
+              Sismos fuertes recientes (magnitud {MAGNITUD_SISMO_FUERTE} o más)
+            </h3>
+            <SismosFuertes alElegir={elegir} elegido={idSismo} />
+          </section>
+          <section aria-labelledby="titulo-todos" className="space-y-2 border-t border-borde pt-4">
+            <h3 id="titulo-todos" className="text-sm font-semibold text-tinta-secundaria">
+              Todos los sismos
+            </h3>
+            <BuscadorSismos alElegir={elegir} elegido={idSismo} />
+          </section>
+        </div>
       </Tarjeta>
-      {idSismo !== null && <Detalle idSismo={idSismo} esAdmin={esAdmin} />}
-      <Tarjeta titulo="Buscar otro sismo" descripcion={`Cualquier sismo del SGC o de USGS de magnitud ${MAGNITUD_MIN_REPLICAS} o más`}>
-        <BuscadorSismos alElegir={elegir} elegido={idSismo} />
-      </Tarjeta>
+      <div ref={refDetalle} className="scroll-mt-24 space-y-5">
+        {idSismo !== null && <Detalle idSismo={idSismo} esAdmin={esAdmin} />}
+      </div>
       <AvisoAlcance texto={AVISO_PRONOSTICO} />
     </>
   );

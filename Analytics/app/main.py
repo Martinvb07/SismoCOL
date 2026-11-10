@@ -245,8 +245,9 @@ def principales_replicas(_: Protegido, cfg: Config) -> list[dict[str, object]]:
 
 @app.get("/replicas/sismo/{id_sismo}")
 def replicas_de_sismo(_: Protegido, cfg: Config, id_sismo: int) -> dict[str, object]:
-    """Pronóstico de réplicas al vuelo para cualquier sismo SGC o USGS con M ≥ 4."""
-    return replicas.pronostico_sismo(cfg.database_url, id_sismo, cfg.replicas_magnitud_min)
+    """Pronóstico de réplicas al vuelo para cualquier sismo SGC o USGS del registro."""
+    return replicas.pronostico_sismo(cfg.database_url, id_sismo, cfg.replicas_magnitud_min,
+                                     cfg.replicas_magnitud_min_consulta)
 
 
 @app.get("/replicas/{id_sismo}")

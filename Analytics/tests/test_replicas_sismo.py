@@ -66,10 +66,19 @@ def test_sismo_con_muchas_replicas_usa_maxima_verosimilitud(sin_base):
     assert 0.8 < r["pronostico"]["p"] < 1.5
 
 
-def test_magnitud_menor_que_4_se_rechaza(sin_base):
+def test_sismo_pequeno_tambien_tiene_pronostico_con_aviso(sin_base):
+    sin_base(catalogo(con_secuencia=False))
+    r = replicas.pronostico_sismo("mysql", 2, 6.0)  # M 3,0
+    assert r["metodo"] == "GENERICO"
+    assert r["advertencia"].startswith("Este sismo es pequeño")
+    siete = next(h for h in r["pronostico"]["resultados"]["horizontes"] if h["horizonte"] == "7d")
+    assert siete["magnitudes"][0]["probabilidad"] < 0.05  # M 3: muy improbable una réplica de magnitud 4
+
+
+def test_minimo_de_consulta_configurable(sin_base):
     sin_base(catalogo(con_secuencia=False))
     with pytest.raises(replicas.MagnitudInsuficiente):
-        replicas.pronostico_sismo("mysql", 2, 6.0)
+        replicas.pronostico_sismo("mysql", 2, 6.0, magnitud_min_consulta=4.0)
 
 
 def test_calculos_lentos_quedan_en_cache(sin_base, monkeypatch):
@@ -91,6 +100,9 @@ def test_endpoint_http(sin_base, monkeypatch):
     cliente = TestClient(app)  # sin "with": no arranca el programador
     ok = cliente.get("/replicas/sismo/1", headers={"X-Token-Interno": TOKEN})
     assert ok.status_code == 200 and ok.json()["metodo"] == "GENERICO"
+    assert cliente.get("/replicas/sismo/2", headers={"X-Token-Interno": TOKEN}).json()["metodo"] == "GENERICO"
+    monkeypatch.setenv("REPLICAS_MAGNITUD_MIN_CONSULTA", "4")
+    ajustes.cache_clear()
     assert cliente.get("/replicas/sismo/2", headers={"X-Token-Interno": TOKEN}).status_code == 422
     assert cliente.get("/replicas/sismo/999", headers={"X-Token-Interno": TOKEN}).status_code == 404
     assert cliente.get("/replicas/sismo/1").status_code == 401

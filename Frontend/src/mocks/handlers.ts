@@ -223,7 +223,6 @@ export const handlers = [
     const guardado = detalleReplicas(id);
     if (guardado) return HttpResponse.json({ ...guardado, metodo: guardado.pronostico.metodo, advertencia: null, origen: 'GUARDADO' });
     if (!sismo) return error(404, 'No existe el sismo en el catálogo instrumental');
-    if ((sismo.magnitud ?? 0) < 4) return error(422, 'El pronóstico de réplicas solo se calcula para sismos de magnitud 4 o mayor.');
     return HttpResponse.json(replicasGenericas(sismo));
   }),
 

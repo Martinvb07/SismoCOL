@@ -73,7 +73,7 @@ export default function PaginaConsulta() {
                     {admiteReplicas(punto) ? (
                       <EnlaceBoton to={rutaReplicas(punto.idSismo)}>Ver réplicas</EnlaceBoton>
                     ) : (
-                      <span className="text-xs text-tinta-tenue">Sin pronóstico de réplicas (solo sismos SGC o USGS de magnitud 4 o más)</span>
+                      <span className="text-xs text-tinta-tenue">Sin pronóstico de réplicas (solo sismos del SGC o de USGS)</span>
                     )}
                   </div>
                 )}

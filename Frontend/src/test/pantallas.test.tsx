@@ -92,8 +92,9 @@ describe('pantallas con datos simulados', () => {
     expect(screen.getByText('Modelo ajustado')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Ejecutar validación/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /M 7,4/ })).toHaveAttribute('aria-pressed', 'true');
-    await usuario.click(screen.getByRole('button', { name: 'Buscar' }));
+    // El listado muestra todos los sismos (sin mínimo de magnitud) desde el inicio
     const encontrados = await screen.findByRole('table', { name: /Sismos encontrados/ }, ESPERA);
+    expect(screen.getByRole('spinbutton', { name: 'Magnitud mínima' })).toHaveValue(null);
     const botones = within(encontrados).getAllByRole('button', { name: /Ver réplicas/ });
     await usuario.click(botones[0] as HTMLElement);
     expect(await screen.findByText(/Método: /i, {}, ESPERA)).toBeInTheDocument();
