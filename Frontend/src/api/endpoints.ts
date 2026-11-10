@@ -29,6 +29,8 @@ import type {
   RespuestaCarga,
   RespuestaEntrenamiento,
   RespuestaLogin,
+  RespuestaMapaAmenaza,
+  RespuestaPeriodosRetorno,
   RespuestaPrediccion,
   RespuestaSincronizacion,
   ResumenAdmin,
@@ -94,6 +96,12 @@ export const apiAnalisis = {
   guardarConfiguracion: (cuerpo: CuerpoConfiguracion) =>
     peticion<ConfiguracionAnalisis>('/api/analisis/configuracion', { metodo: 'PUT', cuerpo }),
   recalcular: () => peticion<{ mensaje: string }>('/api/analisis/recalcular', { metodo: 'POST' }),
+};
+
+/* ---------- Periodo de retorno y amenaza ---------- */
+export const apiAmenaza = {
+  periodosRetorno: () => peticion<RespuestaPeriodosRetorno>('/api/amenaza/periodos-retorno'),
+  mapa: () => peticion<RespuestaMapaAmenaza>('/api/amenaza/mapa'),
 };
 
 /* ---------- Pronóstico de réplicas ---------- */
@@ -185,6 +193,8 @@ export const claves = {
   configuracion: ['analisis', 'configuracion'] as const,
   modelos: ['modelos'] as const,
   replicas: ['replicas'] as const,
+  periodosRetorno: ['amenaza', 'periodos'] as const,
+  mapaAmenaza: ['amenaza', 'mapa'] as const,
   detalleReplicas: (idSismo: number) => ['replicas', idSismo] as const,
   simulaciones: ['simulaciones'] as const,
   dispositivos: ['dispositivos'] as const,

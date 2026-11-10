@@ -389,3 +389,67 @@ model BacktestingPronostico {
   @@index([idPronostico])
   @@map("backtesting_pronostico")
 }
+
+/// Lote de cálculo de periodos de retorno y mapa de amenaza (D17) con el catálogo
+/// histórico depurado de réplicas. Guarda el catálogo, el periodo y los parámetros.
+model CalculoAmenaza {
+  idCalculo     Int      @id @default(autoincrement()) @map("id_calculo")
+  catalogo      FuenteDato
+  periodoInicio DateTime @map("periodo_inicio") @db.DateTime(0)
+  periodoFin    DateTime @map("periodo_fin") @db.DateTime(0)
+  /// Mc (global y por década), b regional, años, kernel, celda y bbox.
+  parametros    Json
+  fechaCalculo  DateTime @default(now()) @map("fecha_calculo") @db.DateTime(0)
+
+  periodos PeriodoRetorno[]
+  celdas   AmenazaCelda[]
+
+  @@index([fechaCalculo])
+  @@map("calculo_amenaza")
+}
+
+/// Tr = 1/λ(M) por zona y magnitud, con rango por b ± σb y probabilidades de Poisson.
+model PeriodoRetorno {
+  idPeriodo               Int     @id @default(autoincrement()) @map("id_periodo")
+  idCalculo               Int     @map("id_calculo")
+  zona                    String  @db.VarChar(60)
+  agrupadaEn              String? @map("agrupada_en") @db.VarChar(60)
+  nEventos                Int     @map("n_eventos") @db.UnsignedInt
+  magnitudCompletitud     Decimal @map("magnitud_completitud") @db.Decimal(3, 1)
+  valorA                  Float   @map("valor_a")
+  valorB                  Float   @map("valor_b")
+  errorB                  Float   @map("error_b")
+  magnitud                Decimal @db.Decimal(3, 1)
+  tasaAnual               Float   @map("tasa_anual")
+  periodoRetorno          Float   @map("periodo_retorno")
+  periodoRetornoMin       Float   @map("periodo_retorno_min")
+  periodoRetornoMax       Float   @map("periodo_retorno_max")
+  magnitudMaximaObservada Decimal @map("magnitud_maxima_observada") @db.Decimal(3, 1)
+  /// La magnitud supera la máxima observada en la zona: Tr extrapolado con Gutenberg-Richter.
+  extrapolado             Boolean
+  /// P(al menos uno) a 30 días y 1, 5, 10 y 50 años.
+  probabilidades          Json
+
+  calculo CalculoAmenaza @relation(fields: [idCalculo], references: [idCalculo], onDelete: Cascade)
+
+  @@index([idCalculo, zona])
+  @@map("periodo_retorno")
+}
+
+/// Celda de 0,5° del mapa de sismicidad suavizada (Frankel 1995).
+model AmenazaCelda {
+  idCelda         Int     @id @default(autoincrement()) @map("id_celda")
+  idCalculo       Int     @map("id_calculo")
+  latitud         Decimal @db.Decimal(6, 3)
+  longitud        Decimal @db.Decimal(7, 3)
+  /// Eventos ≥ Mc depurados dentro de la celda (antes de suavizar).
+  eventos         Float
+  tasaMc          Float   @map("tasa_mc")
+  tasaM5          Float   @map("tasa_m5")
+  probabilidad10a Float   @map("probabilidad_10a")
+
+  calculo CalculoAmenaza @relation(fields: [idCalculo], references: [idCalculo], onDelete: Cascade)
+
+  @@index([idCalculo])
+  @@map("amenaza_celda")
+}

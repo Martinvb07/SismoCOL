@@ -3,7 +3,10 @@
  * No son resultados: los valores reales los calcula Analytics con el catálogo cargado.
  */
 import type {
+  CabeceraAmenaza,
   DetalleReplicas,
+  RespuestaMapaAmenaza,
+  RespuestaPeriodosRetorno,
   ModeloPronostico,
   PronosticoActividad,
   PuntoPronostico,
@@ -201,3 +204,73 @@ export function pronosticoActividad(zona: string): PronosticoActividad {
     fechaCalculo: '2026-11-10T07:15:00.000Z',
   };
 }
+
+/* ---------- Periodo de retorno y amenaza (simulado) ---------- */
+
+const CABECERA_AMENAZA: CabeceraAmenaza = {
+  idCalculo: 1,
+  catalogo: 'USGS_HIST',
+  periodoInicio: '1973-01-05T00:39:48.000Z',
+  periodoFin: '2026-11-07T17:17:38.000Z',
+  parametros: {
+    catalogo: 'USGS_HIST',
+    magnitudMinCatalogo: 4.5,
+    depuracion: 'Gardner-Knopoff (1974)',
+    eventosCatalogo: 1000,
+    eventosDepurados: 600,
+    mc: 4.7,
+    mcPorDecada: { '1990s': 4.7 },
+    bRegional: 1.0,
+    errorBRegional: 0.03,
+    anios: 53.8,
+    minEventosZona: 30,
+    tamanoCeldaGrados: 0.5,
+    distanciaCorrelacionKm: 50,
+    magnitudMapa: 5,
+    aniosMapa: 10,
+    metodoMapa: 'Sismicidad suavizada con kernel gaussiano (Frankel 1995)',
+  },
+  fechaCalculo: '2026-11-10T07:15:00.000Z',
+};
+
+function zonaSimulada(zona: string, a: number, b: number, agrupadaEn: string | null = null) {
+  return {
+    zona,
+    agrupadaEn,
+    nEventos: 120,
+    mc: 4.7,
+    a,
+    b,
+    errorB: 0.08,
+    magnitudMaximaObservada: 7.2,
+    magnitudes: [5, 6, 7].map((m) => {
+      const tasa = 10 ** (a - b * m);
+      const prob = (t: number) => 1 - Math.exp(-tasa * t);
+      return {
+        magnitud: m,
+        tasaAnual: tasa,
+        periodoRetorno: 1 / tasa,
+        periodoRetornoMin: 0.8 / tasa,
+        periodoRetornoMax: 1.3 / tasa,
+        extrapolado: m > 7.2,
+        probabilidades: { dias30: prob(30 / 365.25), anios1: prob(1), anios5: prob(5), anios10: prob(10), anios50: prob(50) },
+      };
+    }),
+  };
+}
+
+export const PERIODOS_RETORNO: RespuestaPeriodosRetorno = {
+  ...CABECERA_AMENAZA,
+  zonas: [zonaSimulada('Chocó', 5.4, 0.85), zonaSimulada('Nido de Bucaramanga', 6.6, 1.3), zonaSimulada('Huila', 5.8, 1.1, 'Región Andina')],
+};
+
+export const MAPA_AMENAZA: RespuestaMapaAmenaza = {
+  ...CABECERA_AMENAZA,
+  celdas: Array.from({ length: 36 * 32 }, (_, k) => {
+    const latitud = -4.25 + Math.floor(k / 32) * 0.5;
+    const longitud = -81.75 + (k % 32) * 0.5;
+    const intensidad = Math.exp(-(((latitud - 6.5) / 3) ** 2) - ((longitud + 75.5) / 2) ** 2);
+    const tasa = 0.12 * intensidad;
+    return { latitud, longitud, eventos: Math.round(intensidad * 5), tasaM5: tasa, probabilidad10a: 1 - Math.exp(-tasa * 10) };
+  }),
+};

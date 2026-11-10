@@ -170,6 +170,29 @@ interface PronosticoActividad {
 }
 ```
 
+## Periodo de retorno y mapa de amenaza
+
+Con el catálogo histórico `USGS_HIST` depurado de réplicas (D17). Se recalcula tras cada sincronización del catálogo histórico y con el análisis.
+
+| Método | Ruta | Rol | Cuerpo / respuesta |
+|---|---|---|---|
+| GET | `/api/amenaza/periodos-retorno` | Usuario | `CabeceraAmenaza & { zonas: ZonaPeriodoRetorno[] }` (ordenadas por Tr de M 5) · `409` sin catálogo histórico |
+| GET | `/api/amenaza/mapa` | Usuario | `CabeceraAmenaza & { celdas: Array<{ latitud; longitud; eventos; tasaM5; probabilidad10a }> }` |
+| POST | `/api/amenaza/recalcular` | Admin | `201 { estado, zonas, celdas }` |
+
+```ts
+interface CabeceraAmenaza {
+  idCalculo; catalogo: Fuente; periodoInicio: string; periodoFin: string; fechaCalculo: string;
+  parametros: { catalogo; magnitudMinCatalogo; depuracion; eventosCatalogo; eventosDepurados; mc; mcPorDecada: Record<string, number>;
+                bRegional; errorBRegional; anios; minEventosZona; tamanoCeldaGrados; distanciaCorrelacionKm; magnitudMapa; aniosMapa; metodoMapa };
+}
+interface ZonaPeriodoRetorno {
+  zona; agrupadaEn: string | null; nEventos; mc; a; b; errorB; magnitudMaximaObservada;
+  magnitudes: Array<{ magnitud /* 5, 6, 7 */; tasaAnual; periodoRetorno; periodoRetornoMin; periodoRetornoMax; extrapolado: boolean;
+                      probabilidades: { dias30; anios1; anios5; anios10; anios50 } }>;
+}
+```
+
 ## Pronóstico de réplicas
 
 Reasenberg-Jones por sismo principal (M ≥ 6 configurable con `REPLICAS_MAGNITUD_MIN` en Analytics). Ver D15.

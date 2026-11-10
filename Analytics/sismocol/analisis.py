@@ -342,11 +342,21 @@ def recalcular(url: str) -> dict[str, object]:
 
 
 def _tareas_posteriores():
-    from sismocol import pronostico, replicas
+    from sismocol import amenaza, pronostico, replicas
     from sismocol.config import ajustes
 
     return [("réplicas", lambda u: replicas.recalcular(u, ajustes().replicas_magnitud_min)),
-            ("pronóstico de actividad", pronostico.recalcular)]
+            ("pronóstico de actividad", pronostico.recalcular),
+            ("amenaza", _amenaza_si_hay_catalogo(amenaza))]
+
+
+def _amenaza_si_hay_catalogo(amenaza):
+    def tarea(url: str) -> None:
+        try:
+            amenaza.recalcular(url)
+        except amenaza.SinCatalogoHistorico as error:
+            log.info("Amenaza omitida: %s", error)
+    return tarea
 
 
 def recalcular_en_segundo_plano(url: str) -> bool:

@@ -21,6 +21,7 @@ TABLAS = (
     "carga_datos", "registro_sismico", "afectacion", "usuario",
     "configuracion_analisis", "analisis_zona", "advertencia_actividad", "modelo_predictivo",
     "pronostico_replicas", "pronostico_actividad", "backtesting_pronostico",
+    "calculo_amenaza", "periodo_retorno", "amenaza_celda",
 )
 COLUMNAS_REGISTRO = [
     "id_evento_origen", "clave_origen", "fecha_hora", "latitud", "longitud",

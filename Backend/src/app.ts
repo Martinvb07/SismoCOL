@@ -7,6 +7,7 @@ import { manejarErrores } from './lib/errores.js';
 import { logger } from './lib/logger.js';
 import { prisma } from './lib/prisma.js';
 import { rutasAdmin } from './modulos/admin/admin.rutas.js';
+import { rutasAmenaza } from './modulos/amenaza/amenaza.rutas.js';
 import { rutasAnalisis } from './modulos/analisis/analisis.rutas.js';
 import { rutasAuth } from './modulos/auth/auth.rutas.js';
 import { rutasCargas } from './modulos/cargas/cargas.rutas.js';
@@ -45,6 +46,7 @@ export function crearApp() {
   app.use('/api', rutasAnalisis);
   app.use('/api', rutasModelos);
   app.use('/api', rutasReplicas);
+  app.use('/api', rutasAmenaza);
   app.use('/api', rutasSimulaciones);
 
   app.use((_req, res) => {

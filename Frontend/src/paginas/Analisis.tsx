@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useId, useState } from 'react';
+import { Amenaza } from './analisis/Amenaza';
 import { PronosticoZona } from './analisis/PronosticoZona';
 import { apiAnalisis, claves } from '@/api/endpoints';
 import { NIVELES_ADVERTENCIA, type NivelAdvertencia, type Probabilidades, type Zona } from '@/api/tipos';
@@ -25,16 +26,17 @@ function AvisoAgrupada({ agrupadaEn }: { agrupadaEn: string | null }) {
   );
 }
 
-type Pestana = 'frecuencia' | 'pronostico';
+type Pestana = 'frecuencia' | 'pronostico' | 'amenaza';
 
 const PESTANAS: ReadonlyArray<{ id: Pestana; titulo: string }> = [
   { id: 'frecuencia', titulo: 'Frecuencia y advertencias' },
   { id: 'pronostico', titulo: 'Pronóstico' },
+  { id: 'amenaza', titulo: 'Periodo de retorno y amenaza' },
 ];
 
 function Pestanas({ activa, alCambiar }: { activa: Pestana; alCambiar: (p: Pestana) => void }) {
   return (
-    <div role="tablist" aria-label="Secciones del análisis" className="flex gap-1 border-b border-borde">
+    <div role="tablist" aria-label="Secciones del análisis" className="flex gap-1 overflow-x-auto border-b border-borde">
       {PESTANAS.map((p) => (
         <button
           key={p.id}
@@ -44,7 +46,7 @@ function Pestanas({ activa, alCambiar }: { activa: Pestana; alCambiar: (p: Pesta
           aria-selected={activa === p.id}
           aria-controls={`panel-${p.id}`}
           onClick={() => alCambiar(p.id)}
-          className={`-mb-px rounded-t-md border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+          className={`-mb-px shrink-0 whitespace-nowrap rounded-t-md border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             activa === p.id ? 'border-primario text-primario' : 'border-transparent text-tinta-secundaria hover:text-tinta'
           }`}
         >
@@ -100,7 +102,7 @@ export default function PaginaAnalisis() {
   const [zonaElegida, setZonaElegida] = useState<string | null>(null);
   const [nivel, setNivel] = useState<NivelAdvertencia | ''>('');
   const [pestana, setPestana] = useState<Pestana>('frecuencia');
-  const aviso = pestana === 'pronostico' ? AVISO_PRONOSTICO : undefined;
+  const aviso = pestana === 'frecuencia' ? undefined : AVISO_PRONOSTICO;
 
   const zonas = useQuery({ queryKey: claves.zonas, queryFn: apiAnalisis.zonas });
   const zona = zonaElegida ?? zonas.data?.[0]?.zona ?? null;
@@ -157,6 +159,12 @@ export default function PaginaAnalisis() {
       {pestana === 'pronostico' && (
         <div role="tabpanel" id="panel-pronostico" aria-labelledby="pestana-pronostico" className="space-y-4">
           {zona === null ? <EstadoVacio titulo="Elige una zona" /> : <PronosticoZona zona={zona} />}
+        </div>
+      )}
+
+      {pestana === 'amenaza' && (
+        <div role="tabpanel" id="panel-amenaza" aria-labelledby="pestana-amenaza" className="space-y-4">
+          <Amenaza zona={zona ?? ''} />
         </div>
       )}
 

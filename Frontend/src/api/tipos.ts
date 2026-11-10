@@ -532,3 +532,80 @@ export interface PronosticoActividad {
   backtesting: MetricaBacktesting[];
   fechaCalculo: string;
 }
+
+/* ---------- Periodo de retorno y mapa de amenaza ---------- */
+
+export interface ParametrosAmenaza {
+  catalogo: Fuente;
+  magnitudMinCatalogo: number;
+  depuracion: string;
+  eventosCatalogo: number;
+  eventosDepurados: number;
+  mc: number;
+  mcPorDecada: Record<string, number>;
+  bRegional: number;
+  errorBRegional: number;
+  anios: number;
+  minEventosZona: number;
+  tamanoCeldaGrados: number;
+  distanciaCorrelacionKm: number;
+  magnitudMapa: number;
+  aniosMapa: number;
+  metodoMapa: string;
+}
+
+export interface CabeceraAmenaza {
+  idCalculo: number;
+  catalogo: Fuente;
+  periodoInicio: string;
+  periodoFin: string;
+  parametros: ParametrosAmenaza;
+  fechaCalculo: string;
+}
+
+export interface ProbabilidadesHorizonte {
+  dias30: number;
+  anios1: number;
+  anios5: number;
+  anios10: number;
+  anios50: number;
+}
+
+export interface PeriodoRetornoMagnitud {
+  magnitud: number;
+  tasaAnual: number;
+  periodoRetorno: number;
+  periodoRetornoMin: number;
+  periodoRetornoMax: number;
+  /** La magnitud supera la máxima observada en la zona. */
+  extrapolado: boolean;
+  probabilidades: ProbabilidadesHorizonte;
+}
+
+export interface ZonaPeriodoRetorno {
+  zona: string;
+  agrupadaEn: string | null;
+  nEventos: number;
+  mc: number;
+  a: number;
+  b: number;
+  errorB: number;
+  magnitudMaximaObservada: number;
+  magnitudes: PeriodoRetornoMagnitud[];
+}
+
+export interface RespuestaPeriodosRetorno extends CabeceraAmenaza {
+  zonas: ZonaPeriodoRetorno[];
+}
+
+export interface CeldaAmenaza {
+  latitud: number;
+  longitud: number;
+  eventos: number;
+  tasaM5: number;
+  probabilidad10a: number;
+}
+
+export interface RespuestaMapaAmenaza extends CabeceraAmenaza {
+  celdas: CeldaAmenaza[];
+}

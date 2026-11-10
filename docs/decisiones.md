@@ -99,3 +99,17 @@ Para cada zona con análisis propio (no agrupada en su región) se pronostica el
   - Con unos 44 meses, la componente estacional de 12 meses se estima con apenas 3 ciclos.
   - El conteo incluye réplicas (D13), así que una secuencia grande infla los meses siguientes y el ingenuo puede salir favorecido o castigado.
   - Si un modelo base gana a SARIMA en una zona, se reporta así.
+
+## D17 — Periodo de retorno y mapa de amenaza (2026-11-10)
+Se calculan con el catálogo histórico `USGS_HIST` (D14), no con el SGC, cuyo periodo de casi 4 años es muy corto para sismos grandes.
+- **Depuración:** Gardner-Knopoff sobre todo el catálogo, ya que todos los eventos tienen epicentro. Poisson supone eventos independientes. En la primera carga quedaron 2 334 de 3 937 eventos.
+- **Completitud:** Mc por máxima curvatura del catálogo depurado: 4,7. La completitud por década (guardada en los parámetros) da 4,9 en los años 70 y 80 y 4,7 desde los 90. Se usa Mc = 4,7 en todo el periodo; los años 70–80 pueden estar algo incompletos entre 4,7 y 4,9, lo que subestimaría levemente las tasas.
+- **Gutenberg-Richter por zona:** b por Aki-Utsu y a anual = log10(N/T) + b·Mc. Las zonas con menos de 30 eventos ≥ Mc usan todos los eventos de su región natural, así que todas las zonas de una región muestran la tasa de la región entera, no la propia.
+- **Periodo de retorno y probabilidades:** Tr = 1/λ(M) para M 5, 6 y 7, con un rango que sale de b ± σb manteniendo la tasa en Mc. P = 1 − e^(−λt) para 30 días y 1, 5, 10 y 50 años. Se marca `extrapolado` cuando M supera la máxima observada en la zona.
+- **Mapa de amenaza:** sismicidad suavizada de Frankel (1995):
+  - conteos ≥ Mc en celdas de 0,5° dentro del rectángulo histórico;
+  - kernel gaussiano con c = 50 km, truncado en 3c;
+  - tasa de M ≥ 5 con el b regional;
+  - P(M ≥ 5 en 10 años) por celda.
+- **Mezcla de magnitudes:** las magnitudes son heterogéneas (sobre todo mb, que se satura cerca de M 6), así que las tasas de M 6–7 dependen de la extrapolación de Gutenberg-Richter.
+- **Alcance:** son tasas medias de largo plazo, no pronósticos de fecha ni de lugar, y no reemplazan el Estudio General de Amenaza Sísmica del SGC.

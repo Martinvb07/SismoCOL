@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel, Field
 
-from sismocol import analisis, db, modelo, pronostico, replicas, servicio
+from sismocol import amenaza, analisis, db, modelo, pronostico, replicas, servicio
 from sismocol.config import Ajustes, ajustes
 from sismocol.ingest import FUENTES, ErrorIngesta
 
@@ -94,6 +94,11 @@ async def manejar_sin_principal(_, error: replicas.SinPrincipal) -> JSONResponse
     return JSONResponse(status_code=404, content={"error": str(error)})
 
 
+@app.exception_handler(amenaza.SinCatalogoHistorico)
+async def manejar_sin_historico(_, error: amenaza.SinCatalogoHistorico) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"error": str(error)})
+
+
 @app.exception_handler(ErrorIngesta)
 async def manejar_error_ingesta(_, error: ErrorIngesta) -> JSONResponse:
     return JSONResponse(status_code=422, content={"error": str(error)})
@@ -146,6 +151,8 @@ def sincronizar_usgs_historico(_: Protegido, cfg: Config, anio_inicio: int | Non
     except Exception as error:
         log.exception("Sincronización USGS histórica fallida")
         return {"idsCarga": [], "errores": [f"USGS_HIST: {type(error).__name__}"]}
+    # Los periodos de retorno y el mapa de amenaza dependen solo de este catálogo (D17).
+    amenaza.recalcular_en_segundo_plano(cfg.database_url)
     return {"idsCarga": [g.id_carga for g in guardadas], "errores": []}
 
 
@@ -231,3 +238,20 @@ def recalcular_replicas(_: Protegido, cfg: Config) -> dict[str, object]:
 @app.post("/replicas/{id_sismo}/validar", status_code=201)
 def validar_replicas(_: Protegido, cfg: Config, id_sismo: int) -> dict[str, object]:
     return replicas.validar_principal(cfg.database_url, id_sismo, cfg.replicas_magnitud_min)
+
+
+# ─── Periodo de retorno y mapa de amenaza (analítica, fase 4) ───────────────
+
+@app.get("/amenaza/periodos-retorno")
+def periodos_retorno(_: Protegido, cfg: Config) -> dict[str, object]:
+    return amenaza.periodos(cfg.database_url)
+
+
+@app.get("/amenaza/mapa")
+def mapa_amenaza(_: Protegido, cfg: Config) -> dict[str, object]:
+    return amenaza.mapa(cfg.database_url)
+
+
+@app.post("/amenaza/recalcular", status_code=201)
+def recalcular_amenaza(_: Protegido, cfg: Config) -> dict[str, object]:
+    return amenaza.recalcular(cfg.database_url)

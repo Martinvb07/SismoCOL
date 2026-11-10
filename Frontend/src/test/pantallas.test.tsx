@@ -61,6 +61,9 @@ describe('pantallas con datos simulados', () => {
     expect(await screen.findByRole('table', { name: /backtesting por origen móvil/i }, ESPERA)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /pronóstico de 12 meses/ })).toBeInTheDocument();
     expect(screen.getAllByText(AVISO_PRONOSTICO).length).toBeGreaterThan(0);
+    await usuario.click(screen.getByRole('tab', { name: 'Periodo de retorno y amenaza' }));
+    expect(await screen.findByRole('table', { name: /Periodo de retorno y probabilidad/ }, ESPERA)).toBeInTheDocument();
+    expect(await screen.findByRole('img', { name: /Mapa de amenaza/ }, ESPERA)).toBeInTheDocument();
 
     // Pronóstico de réplicas
     await irA(usuario, 'Pronóstico de réplicas');
